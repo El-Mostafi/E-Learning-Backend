@@ -5,6 +5,13 @@ import express, {Application} from "express";
 import cookieSession from "cookie-session";
 import cors from "cors";
 import mongoose from "mongoose";
+import {requireAuth, currentUser,errorHandler,NotFundError} from "../common";
+import {
+    signInRouter,
+    signUpRouter,
+    signOutRouter,
+    currentUserRouter,
+} from './routers';
 export class AppModule {
     constructor(public app: Application ) {
         app.set('trust proxy', true);
@@ -32,6 +39,16 @@ export class AppModule {
             } catch (err: any) {
                 throw new Error(err);
             }
+            this.app.use(currentUser);
+
+            this.app.use(signInRouter);
+            this.app.use(signUpRouter);
+            this.app.use(signOutRouter);
+            this.app.use(currentUserRouter);
+            this.app.use(errorHandler);
+
+
+            
             this.app.listen(8030, () => console.log("Server is running on port 8030"));
     }
 }
