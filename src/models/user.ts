@@ -1,14 +1,22 @@
 import mongoose from "mongoose";
-import { authenticationService } from "../../common";
+import { AuthenticationService } from "../../common";
 
 export interface UserDocument extends mongoose.Document {
     email: string;
     password: string;
+    userName: string;
+    emailConfirmed: boolean;
+    profileImg: string;
+    coverImg: string;
+    createdAt: Date;
+    AboutMe:string
 }
 
 export interface createUserDto {
     email: string;
-    password: string; 
+    password: string;
+    userName: string;
+    AboutMe?: string; // Optional
 }
 
 export interface UserModel extends mongoose.Model<UserDocument> {
@@ -18,14 +26,42 @@ export interface UserModel extends mongoose.Model<UserDocument> {
 const userSchema = new mongoose.Schema({
     email: {
         type: String,
-        required: true
+        required: true,
+        unique: true
     },
     password: {
         type: String,
         required: true
+    },
+    userName: {
+        type: String,
+        required: true,
+        unique: true
+    },
+    emailConfirmed: {
+        type: Boolean,
+        default: false
+    },
+    profileImg: {
+        type: String,
+        default: null
+    },
+    coverImg: {
+        type: String,
+        default: null
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
+    },
+    AboutMe:{
+        type:String,
+        default: null
     }
+
 });
 userSchema.pre('save', async function(done){
+    const authenticationService = new AuthenticationService()
     if(this.isModified('password') || this.isNew){ 
         const HashedPassword =await authenticationService.pwdToHash(this.get('password'));
         this.set('password', HashedPassword);
