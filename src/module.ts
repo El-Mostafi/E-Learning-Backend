@@ -6,12 +6,8 @@ import cookieSession from "cookie-session";
 import cors from "cors";
 import mongoose from "mongoose";
 import {requireAuth, currentUser,errorHandler,NotFundError} from "../common";
-import {
-    signInRouter,
-    signUpRouter,
-    signOutRouter,
-    currentUserRouter,
-} from './routers';
+import { authRouters } from '../src/routers/auth/auth.routers';
+
 export class AppModule {
     constructor(public app: Application ) {
         app.set('trust proxy', true);
@@ -41,14 +37,14 @@ export class AppModule {
             }
             this.app.use(currentUser);
 
-            this.app.use(signInRouter);
-            this.app.use(signUpRouter);
-            this.app.use(signOutRouter);
-            this.app.use(currentUserRouter);
+            this.app.use(authRouters);
             this.app.use(errorHandler);
 
 
-            
+            this.app.all('*',(req,res,next)=>{
+                next(new NotFundError());
+            });
+
             this.app.listen(8030, () => console.log("Server is running on port 8030"));
     }
 }
