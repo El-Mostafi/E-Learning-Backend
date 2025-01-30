@@ -27,3 +27,4 @@ export class AuthenticationService {
         return jwt.verify(jwtToken, JWT_KEY) as JwtPayload
     }
 }
+export const authenticationService = new AuthenticationService()
