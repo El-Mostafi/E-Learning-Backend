@@ -1,11 +1,13 @@
 import { Request, Response, NextFunction } from "express";
 import jwt  from "jsonwebtoken";
-
+import { authenticationService } from "../services/authentication";
+import { BadRequestError } from "../errors/bad-request-error";
 declare global {
     interface JwtPayload {
         email: string;
         userId: string;
         userName: string;
+        emailConfirmed: boolean;
     }
     namespace Express {
         interface Request {
@@ -18,8 +20,9 @@ export const currentUser =(req: Request, res: Response, next: NextFunction)=>{
         return next();
     }
     try{
-        const payload = (jwt.verify(req.session?.jwt, process.env.JWT_KEY!)) as JwtPayload;
+        const payload = authenticationService.verifyJwt(req.session?.jwt, process.env.JWT_KEY!);
         req.currentUser = payload;
+        
     }catch(err){
         return next(err);
     }

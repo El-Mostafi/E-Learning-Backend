@@ -23,7 +23,25 @@ export class UserService {
             ]
         });
     }
+    async findOneByEmail(email: string) {
+        return await User.findOne({email});
+    }
+    async updatePassword(email: string, hashedPassword: string) {
+        try {
+            const user = await User.findOne({ email });
     
+            if (!user) {
+                return { success: false, message: "User not found" };
+            }
+    
+            user.password = hashedPassword;
+            await user.save();
+    
+            return { success: true, message: "Password updated successfully" };
+        } catch (error) {
+            return { success: false, message: error };
+        }
+    }
 
 }
 
