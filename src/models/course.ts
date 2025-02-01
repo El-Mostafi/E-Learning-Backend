@@ -1,4 +1,8 @@
 import mongoose from "mongoose";
+import reviewSchema from "../routers/course/review";
+import certificateSchema from "../routers/course/certificate";
+import categorySchema from "../routers/course/category";
+import { CourseDto } from "src/routers/course/dtos/course.dto";
 
 export enum Level {
   Beginner = "Beginner",
@@ -14,27 +18,6 @@ export enum Language {
   German = "German",
   Italian = "Italian",
 }
-
-const reviewSchema = new mongoose.Schema({
-  userName: {
-    type: String,
-    required: true,
-  },
-  text: {
-    type: String,
-    required: true,
-  },
-  rating: {
-    type: Number,
-    required: true,
-    min: 1,
-    max: 5,
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-});
 
 
 const lectureSchema = new mongoose.Schema({
@@ -87,20 +70,57 @@ const examSchema = new mongoose.Schema({
   },
 });
 
-const certificateSchema = new mongoose.Schema({
-  title: {
-    type: String,
-    required: true,
-  },
-  dateIssued: {
-    type: Date,
-    default: Date.now,
-  },
-  url: {
-    type: String,
-    required: true,
-  },
-});
+
+interface CourseDocument extends mongoose.Document {
+  title: string;
+  description: string;
+  coverImg: string;
+  level: string;
+  language: string;
+  price: number;
+  oldPrice?: number;
+  category: {
+    name: string;
+    description: string;
+  };
+  reviews: {
+    userId: string;
+    userName: string;
+    review: string;
+    rating: number;
+    createdAt: Date;
+  }[];
+  sections: {
+    title: string;
+    orderIndex: number;
+    isPreview: boolean;
+    lectures: {
+      title: string;
+      duration: number;
+      videoUrl: string;
+      thumbnailUrl: string;
+    }[];
+  }[];
+  certificates: {
+    courseTitle: string;
+    instructorName: string;
+    student: mongoose.Schema.Types.ObjectId;    
+    dateIssued: Date;
+    url: string;
+  }[] | null;
+  exam: {
+    question: string;
+    options: string[];
+    correctAnswerIndex: number;
+  } | null;
+  instructor: mongoose.Schema.Types.ObjectId;
+  students: mongoose.Schema.Types.ObjectId[];
+  isPublished: boolean;
+}
+
+interface CourseModel extends mongoose.Model<CourseDocument> {
+  build(courseDto: CourseDto): CourseDocument;
+}
 
 const courseSchema = new mongoose.Schema(
   {
@@ -113,7 +133,7 @@ const courseSchema = new mongoose.Schema(
       required: true,
     },
 
-    imageUrl: {
+    coverImg: {
       type: String,
       required: true,
     },
@@ -140,18 +160,7 @@ const courseSchema = new mongoose.Schema(
       required: false,
     },
 
-    category: {
-      type: new mongoose.Schema({
-        name: {
-          type: String,
-          required: true,
-        },
-        description: {
-          type: String,
-          required: false,
-        },
-      }),
-    },
+    category: categorySchema,
 
     reviews: [reviewSchema],
     sections: [SectionSchema],
@@ -170,10 +179,19 @@ const courseSchema = new mongoose.Schema(
         ref: "User",
       },
     ],
+
+    isPublished: {
+      type: Boolean,
+      default: false,
+    }
   },
 
   { timestamps: true }
 );
 
-const Course = mongoose.model("Course", courseSchema);
+courseSchema.statics.build = (courseDto: CourseDto) => {
+  return new Course(courseDto);
+}
+
+const Course = mongoose.model<CourseDocument, CourseModel>("Course", courseSchema);
 export default Course;

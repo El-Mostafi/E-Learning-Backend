@@ -33,7 +33,7 @@ export class AppModule {
                 await mongoose.connect(process.env.MONGO_URL);
                 console.log("Connected to MongoDB");
             } catch (err: any) {
-                throw new Error(err);
+                console.log(err);
             }
             this.app.use(currentUser);
 
@@ -45,6 +45,6 @@ export class AppModule {
                 next(new NotFundError());
             });
 
-            this.app.listen(8030, () => console.log("Server is running on port 8030"));
+            this.app.listen(3030, () => console.log("Server is running on port 3030"));
     }
 }

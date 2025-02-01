@@ -57,7 +57,56 @@ const userSchema = new mongoose.Schema({
     AboutMe:{
         type:String,
         default: null
-    }
+    },
+    // Fields related to courses
+    enrollments: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Enrollment'
+        }
+    ],
+    // Fields related to reviews
+    reviews: [
+        new mongoose.Schema({
+            courseId: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Course',
+                required: true
+            },
+            text: {
+                type: String,
+                required: true
+            },
+            rating: {
+                type: Number,
+                required: true,
+                min: 1,
+                max: 5
+            },
+            createdAt: {
+                type: Date,
+                default: Date.now
+            }
+        })
+    ],
+    // Fields related to certificates
+    certificates: [
+        new mongoose.Schema({
+            courseId: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Course',
+                required: true
+            },
+            issueDate: {
+                type: Date,
+                default: Date.now
+            },
+            url: {
+                type: String,
+                required: true
+            }
+        })
+    ]
 
 });
 userSchema.pre('save', async function(done){
