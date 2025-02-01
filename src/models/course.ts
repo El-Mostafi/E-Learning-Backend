@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
-import reviewSchema from "../routers/course/review";
-import certificateSchema from "../routers/course/certificate";
-import categorySchema from "../routers/course/category";
-import { CourseDto } from "src/routers/course/dtos/course.dto";
+import reviewSchema, { Review } from "../routers/course/review";
+import certificateSchema, { Certificate } from "../routers/course/certificate";
+import categorySchema, { Category } from "../routers/course/category";
+import { CourseDto } from "../routers/course/dtos/course.dto";
 
 export enum Level {
   Beginner = "Beginner",
@@ -79,17 +79,8 @@ interface CourseDocument extends mongoose.Document {
   language: string;
   price: number;
   oldPrice?: number;
-  category: {
-    name: string;
-    description: string;
-  };
-  reviews: {
-    userId: string;
-    userName: string;
-    review: string;
-    rating: number;
-    createdAt: Date;
-  }[];
+  category: Category;
+  reviews: Review[];
   sections: {
     title: string;
     orderIndex: number;
@@ -101,13 +92,7 @@ interface CourseDocument extends mongoose.Document {
       thumbnailUrl: string;
     }[];
   }[];
-  certificates: {
-    courseTitle: string;
-    instructorName: string;
-    student: mongoose.Schema.Types.ObjectId;    
-    dateIssued: Date;
-    url: string;
-  }[] | null;
+  certificates: Certificate[] | null;
   exam: {
     question: string;
     options: string[];

@@ -1,5 +1,13 @@
 import mongoose from "mongoose";
 
+export interface Review extends mongoose.Document {
+    userId: string;
+    userName: string;
+    text: string;
+    rating: number;
+    createdAt: Date;
+}
+
 const reviewSchema = new mongoose.Schema({
   userId:{
     type: mongoose.Schema.Types.ObjectId,

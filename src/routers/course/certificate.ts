@@ -1,5 +1,14 @@
 import mongoose from "mongoose";
 
+export interface Certificate extends mongoose.Document {
+    courseTitle: string;
+    instructorName: string;
+    student: string;
+    dateIssued: Date;
+    url: string;
+}
+
+
 const certificateSchema = new mongoose.Schema({
   courseTitle: {
     type: String,

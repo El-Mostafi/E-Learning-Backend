@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { AuthenticationService } from "../../common";
+import reviewSchema from "../routers/course/review";
 
 export interface UserDocument extends mongoose.Document {
     email: string;
@@ -9,7 +10,8 @@ export interface UserDocument extends mongoose.Document {
     profileImg: string;
     coverImg: string;
     createdAt: Date;
-    AboutMe:string
+    AboutMe:string;
+
 }
 
 export interface createUserDto {
@@ -66,47 +68,9 @@ const userSchema = new mongoose.Schema({
         }
     ],
     // Fields related to reviews
-    reviews: [
-        new mongoose.Schema({
-            courseId: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'Course',
-                required: true
-            },
-            text: {
-                type: String,
-                required: true
-            },
-            rating: {
-                type: Number,
-                required: true,
-                min: 1,
-                max: 5
-            },
-            createdAt: {
-                type: Date,
-                default: Date.now
-            }
-        })
-    ],
+    reviews: [reviewSchema],
     // Fields related to certificates
-    certificates: [
-        new mongoose.Schema({
-            courseId: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'Course',
-                required: true
-            },
-            issueDate: {
-                type: Date,
-                default: Date.now
-            },
-            url: {
-                type: String,
-                required: true
-            }
-        })
-    ]
+    certificates: []
 
 });
 userSchema.pre('save', async function(done){
