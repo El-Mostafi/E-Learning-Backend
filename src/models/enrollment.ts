@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 
 export interface Enrollment extends mongoose.Document {
-    courseId: string;
-    userId: string;
+    courseId: mongoose.Schema.Types.ObjectId;
+    userId: mongoose.Schema.Types.ObjectId;
     progress: number;
     completed: boolean;
     completedAt: Date;
@@ -13,7 +13,7 @@ export interface EnrollmentModel extends mongoose.Model<Enrollment> {
     build(enrollment: Enrollment): Enrollment;
 }
 
-const enrollmentSchema = new mongoose.Schema({
+const enrollmentSchema = new mongoose.Schema<Enrollment>({
   courseId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Course",

@@ -1,5 +1,5 @@
 import Course from "src/models/course";
-import { CourseDto } from "../routers/course/dtos/course.dto";
+import { CourseDto } from "../../routers/course/dtos/course.dto";
 
 export class CourseService {
     constructor(
@@ -18,4 +18,6 @@ export class CourseService {
     async findOneById(id: string){
         return await Course.findById(id);
     }
+
+    
 }

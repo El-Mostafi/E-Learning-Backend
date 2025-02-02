@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import reviewSchema, { Review } from "../routers/course/review";
-import certificateSchema, { Certificate } from "../routers/course/certificate";
-import categorySchema, { Category } from "../routers/course/category";
+import certificateSchema, { Certificate } from "./schemas/certificate";
+import categorySchema, { Category } from "./schemas/category";
 import { CourseDto } from "../routers/course/dtos/course.dto";
 
 export enum Level {
@@ -20,7 +20,27 @@ export enum Language {
 }
 
 
-const lectureSchema = new mongoose.Schema({
+interface Lecture extends mongoose.Document {
+  title: string;
+  duration: number;
+  videoUrl: string;
+  thumbnailUrl: string;
+}
+
+interface Section extends mongoose.Document {
+  title: string;
+  orderIndex: number;
+  isPreview: boolean;
+  lectures: Lecture[];
+}
+
+interface Exam extends mongoose.Document {
+  question: string;
+  options: string[];
+  correctAnswerIndex: number;
+}
+
+const lectureSchema = new mongoose.Schema<Lecture>({
   title: {
     type: String,
     required: true,
@@ -39,7 +59,7 @@ const lectureSchema = new mongoose.Schema({
   },
 });
 
-const SectionSchema = new mongoose.Schema({
+const SectionSchema = new mongoose.Schema<Section>({
   title: {
     type: String,
     required: true,
@@ -55,7 +75,7 @@ const SectionSchema = new mongoose.Schema({
   lectures: [lectureSchema],
 });
 
-const examSchema = new mongoose.Schema({
+const examSchema = new mongoose.Schema<Exam>({
   question: {
     type: String,
     required: true,
@@ -107,7 +127,7 @@ interface CourseModel extends mongoose.Model<CourseDocument> {
   build(courseDto: CourseDto): CourseDocument;
 }
 
-const courseSchema = new mongoose.Schema(
+const courseSchema = new mongoose.Schema<CourseDocument>(
   {
     title: {
       type: String,

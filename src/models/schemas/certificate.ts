@@ -3,13 +3,13 @@ import mongoose from "mongoose";
 export interface Certificate extends mongoose.Document {
     courseTitle: string;
     instructorName: string;
-    student: string;
+    student: mongoose.Schema.Types.ObjectId;
     dateIssued: Date;
     url: string;
 }
 
 
-const certificateSchema = new mongoose.Schema({
+const certificateSchema = new mongoose.Schema<Certificate>({
   courseTitle: {
     type: String,
     required: true,

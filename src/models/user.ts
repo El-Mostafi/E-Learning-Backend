@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { AuthenticationService } from "../../common";
-import reviewSchema from "../routers/course/review";
+import reviewSchema, { Review } from "./schemas/review";
+import certificateSchema from "./schemas/certificate";
 
 export interface UserDocument extends mongoose.Document {
     email: string;
@@ -11,6 +12,9 @@ export interface UserDocument extends mongoose.Document {
     coverImg: string;
     createdAt: Date;
     AboutMe:string;
+    enrollments: mongoose.Schema.Types.ObjectId[];
+    reviews: Review[];
+    certificates: [];
 
 }
 
@@ -25,7 +29,7 @@ export interface UserModel extends mongoose.Model<UserDocument> {
     build(createUserDto: createUserDto): UserDocument
 }
 
-const userSchema = new mongoose.Schema({
+const userSchema = new mongoose.Schema<UserDocument>({
     email: {
         type: String,
         required: true,
@@ -70,7 +74,7 @@ const userSchema = new mongoose.Schema({
     // Fields related to reviews
     reviews: [reviewSchema],
     // Fields related to certificates
-    certificates: []
+    certificates: [certificateSchema]
 
 });
 userSchema.pre('save', async function(done){
