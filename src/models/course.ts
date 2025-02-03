@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import reviewSchema, { Review } from "../routers/course/review";
+import reviewSchema, { Review } from "./schemas/review";
 import certificateSchema, { Certificate } from "./schemas/certificate";
 import categorySchema, { Category } from "./schemas/category";
 import { CourseDto } from "../routers/course/dtos/course.dto";
@@ -19,7 +19,6 @@ export enum Language {
   Italian = "Italian",
 }
 
-
 interface Lecture extends mongoose.Document {
   title: string;
   duration: number;
@@ -31,7 +30,7 @@ interface Section extends mongoose.Document {
   title: string;
   orderIndex: number;
   isPreview: boolean;
-  lectures: Lecture[];
+  lectures: mongoose.Types.DocumentArray<Lecture>;
 }
 
 interface Exam extends mongoose.Document {
@@ -90,7 +89,6 @@ const examSchema = new mongoose.Schema<Exam>({
   },
 });
 
-
 interface CourseDocument extends mongoose.Document {
   title: string;
   description: string;
@@ -100,24 +98,10 @@ interface CourseDocument extends mongoose.Document {
   price: number;
   oldPrice?: number;
   category: Category;
-  reviews: Review[];
-  sections: {
-    title: string;
-    orderIndex: number;
-    isPreview: boolean;
-    lectures: {
-      title: string;
-      duration: number;
-      videoUrl: string;
-      thumbnailUrl: string;
-    }[];
-  }[];
-  certificates: Certificate[] | null;
-  exam: {
-    question: string;
-    options: string[];
-    correctAnswerIndex: number;
-  } | null;
+  reviews: mongoose.Types.DocumentArray<Review>;
+  sections: mongoose.Types.DocumentArray<Section>;
+  certificates: mongoose.Types.DocumentArray<Certificate>;
+  exam: Exam;
   instructor: mongoose.Schema.Types.ObjectId;
   students: mongoose.Schema.Types.ObjectId[];
   isPublished: boolean;
@@ -188,7 +172,7 @@ const courseSchema = new mongoose.Schema<CourseDocument>(
     isPublished: {
       type: Boolean,
       default: false,
-    }
+    },
   },
 
   { timestamps: true }
@@ -196,7 +180,10 @@ const courseSchema = new mongoose.Schema<CourseDocument>(
 
 courseSchema.statics.build = (courseDto: CourseDto) => {
   return new Course(courseDto);
-}
+};
 
-const Course = mongoose.model<CourseDocument, CourseModel>("Course", courseSchema);
+const Course = mongoose.model<CourseDocument, CourseModel>(
+  "Course",
+  courseSchema
+);
 export default Course;

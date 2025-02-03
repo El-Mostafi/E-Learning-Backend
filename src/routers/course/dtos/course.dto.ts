@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+
 export interface LectureDto {
     title: string;
     duration: number;
@@ -19,7 +21,7 @@ export interface ExamDto {
 }
 
 export interface CategoryDto {
-    title: string;
+    name: string;
     description: string;
 }
 
@@ -32,9 +34,7 @@ export interface CourseDto {
     price: number;
     oldPrice: number;
     category: CategoryDto;
-    sections: SectionDto[];
-    exam: ExamDto;
-    isPublished: boolean;
-    instructorId: string;
+    isPublished?: boolean;
+    instructor: mongoose.Schema.Types.ObjectId;
 }
 

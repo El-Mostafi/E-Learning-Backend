@@ -15,6 +15,7 @@ export interface UserDocument extends mongoose.Document {
     enrollments: mongoose.Schema.Types.ObjectId[];
     reviews: Review[];
     certificates: [];
+    speciality?: string;
 
 }
 
