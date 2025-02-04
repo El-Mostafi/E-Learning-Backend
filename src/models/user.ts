@@ -12,7 +12,7 @@ export interface UserDocument extends mongoose.Document {
     coverImg: string;
     createdAt: Date;
     AboutMe:string;
-    enrollments: mongoose.Schema.Types.ObjectId[];
+    enrollments: mongoose.Types.ObjectId[];
     reviews: Review[];
     certificates: [];
     speciality?: string;

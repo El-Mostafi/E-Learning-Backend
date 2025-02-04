@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 export interface Review extends mongoose.Document {
-    userId: mongoose.Schema.Types.ObjectId;
+    userId: mongoose.Types.ObjectId;
     userName: string;
     text: string;
     rating: number;

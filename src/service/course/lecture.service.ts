@@ -1,13 +1,23 @@
+import mongoose from "mongoose";
 import Course from "../../models/course";
-import { LectureDto } from "src/routers/course/dtos/course.dto";
+import { LectureDto } from "../../routers/course/dtos/course.dto";
 
 export class LectureService {
   constructor() {}
 
-  async create(courseId: string, sectionId: string, lectureDto: LectureDto) {
+  async create(
+    userId: mongoose.Types.ObjectId,
+    courseId: string,
+    sectionId: string,
+    lectureDto: LectureDto
+  ) {
     const course = await Course.findById(courseId);
     if (!course) {
       return { success: false, message: "Course not found" };
+    }
+    // Check if the user is the instructor of the course
+    if (course.instructor.toString() !== userId.toString()) {
+      return { success: false, message: "Unauthorized" };
     }
 
     const section = course.sections.id(sectionId);
@@ -56,6 +66,7 @@ export class LectureService {
   }
 
   async update(
+    userId: mongoose.Types.ObjectId,
     courseId: string,
     sectionId: string,
     lectureId: string,
@@ -69,6 +80,11 @@ export class LectureService {
     const section = course.sections.id(sectionId);
     if (!section) {
       return { success: false, message: "Section not found" };
+    }
+
+    // Check if the user is the instructor of the course
+    if (course.instructor.toString() !== userId.toString()) {
+      return { success: false, message: "Unauthorized" };
     }
 
     const lecture = section.lectures.id(lectureId);
@@ -85,11 +101,22 @@ export class LectureService {
     return { success: true, message: "Lecture updated successfully" };
   }
 
-  async delete(courseId: string, sectionId: string, lectureId: string) {
+  async delete(
+    userId: mongoose.Types.ObjectId,
+    courseId: string,
+    sectionId: string,
+    lectureId: string
+  ) {
     const course = await Course.findById(courseId);
     if (!course) {
       return { success: false, message: "Course not found" };
     }
+
+    // Check if the user is the instructor of the course
+    if (course.instructor.toString() !== userId.toString()) {
+      return { success: false, message: "Unauthorized" };
+    }
+
     const section = course.sections.id(sectionId);
     if (!section) {
       return { success: false, message: "Section not found" };

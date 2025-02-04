@@ -15,6 +15,7 @@ import { authRouters } from "../src/routers/auth/auth.routers";
 import { courseRouter } from "../src/routers/course/course.routers";
 import { sectionRouter } from "./routers/course/section.routers";
 import { lectureRouter } from "./routers/course/lecture.routers";
+import { enrollmentRouter } from "./routers/enrollment/enrollment.routers";
 
 export class AppModule {
   constructor(public app: Application) {
@@ -53,6 +54,7 @@ export class AppModule {
     this.app.use(courseRouter);
     this.app.use(sectionRouter);
     this.app.use(lectureRouter);
+    this.app.use(enrollmentRouter)
 
     this.app.use(errorHandler);
 

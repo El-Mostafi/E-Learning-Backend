@@ -35,6 +35,5 @@ export interface CourseDto {
     oldPrice: number;
     category: CategoryDto;
     isPublished?: boolean;
-    instructor: mongoose.Schema.Types.ObjectId;
 }
 

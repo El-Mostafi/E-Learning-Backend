@@ -1,13 +1,18 @@
+import mongoose from "mongoose";
 import Course from "../../models/course";
 import { SectionDto } from "src/routers/course/dtos/course.dto";
 
 export class SectionService {
   constructor() {}
 
-  async create(courseId: string, sectionDto: SectionDto) {
+  async create(userId: mongoose.Types.ObjectId, courseId: string, sectionDto: SectionDto) {
     const course = await Course.findById(courseId);
     if (!course) {
       return { success: false, message: "Course not found" };
+    }
+    // Check if the user is the instructor of the course
+    if (course.instructor.toString() !== userId.toString()) {
+      return { success: false, message: "Unauthorized" };
     }
 
     const newSection = {
@@ -42,11 +47,15 @@ export class SectionService {
     return section;
   }
 
-  async update(courseId: string, sectionId: string, sectionDto: SectionDto) {
+  async update(userId: mongoose.Types.ObjectId, courseId: string, sectionId: string, sectionDto: SectionDto) {
     const course = await Course.findById(courseId);
     if (!course) {
       return { success: false, message: "Course not found" };
     }
+    // Check if the user is the instructor of the course
+    if (course.instructor.toString() !== userId.toString()) {
+      return { success: false, message: "Unauthorized" };}
+
     const section = course.sections.id(sectionId);
     if (!section) {
       return { success: false, message: "Section not found" };
@@ -59,11 +68,16 @@ export class SectionService {
     return { success: true, message: "Section updated successfully" };
   }
 
-  async delete(courseId: string, sectionId: string) {
+  async delete(userId: mongoose.Types.ObjectId, courseId: string, sectionId: string) {
     const course = await Course.findById(courseId);
     if (!course) {
       return { success: false, message: "Course not found" };
     }
+    // Check if the user is the instructor of the course
+    if (course.instructor.toString() !== userId.toString()) {
+      return { success: false, message: "Unauthorized" };
+    }
+
     course.sections.pull(sectionId);
     await course.save();
     return { success: true, message: "Section deleted successfully" };

@@ -1,16 +1,19 @@
 import mongoose from "mongoose";
 
 export interface Enrollment extends mongoose.Document {
-    courseId: mongoose.Schema.Types.ObjectId;
-    userId: mongoose.Schema.Types.ObjectId;
-    progress: number;
-    completed: boolean;
-    completedAt: Date;
-    startedAt: Date;
+  courseId: mongoose.Types.ObjectId;
+  userId: mongoose.Types.ObjectId;
+  progress: number;
+  completed: boolean;
+  completedAt: Date | null;
+  startedAt: Date;
 }
 
 export interface EnrollmentModel extends mongoose.Model<Enrollment> {
-    build(enrollment: Enrollment): Enrollment;
+  build(enrollment: {
+    courseId: mongoose.Types.ObjectId;
+    userId: mongoose.Types.ObjectId;
+  }): Enrollment;
 }
 
 const enrollmentSchema = new mongoose.Schema<Enrollment>({
@@ -42,9 +45,12 @@ const enrollmentSchema = new mongoose.Schema<Enrollment>({
   },
 });
 
-enrollmentSchema.statics.build = (enrollment: Enrollment) => {
+enrollmentSchema.statics.build = (enrollment: {
+  courseId: mongoose.Types.ObjectId;
+  userId: mongoose.Types.ObjectId;
+}) => {
   return new Enrollment(enrollment);
 };
 
-const Enrollment = mongoose.model("Enrollment", enrollmentSchema);
+const Enrollment = mongoose.model<Enrollment, EnrollmentModel>("Enrollment", enrollmentSchema);
 export default Enrollment;

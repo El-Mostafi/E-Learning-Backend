@@ -4,9 +4,9 @@ import { authenticationService } from "../services/authentication";
 import { BadRequestError } from "../errors/bad-request-error";
 import mongoose from "mongoose";
 declare global {
-  interface JwtPayload{
+  interface JwtPayload {
     email: string;
-    userId: mongoose.Schema.Types.ObjectId;
+    userId: mongoose.Types.ObjectId;
     userName: string;
     emailConfirmed: boolean;
   }

@@ -102,8 +102,8 @@ interface CourseDocument extends mongoose.Document {
   sections: mongoose.Types.DocumentArray<Section>;
   certificates: mongoose.Types.DocumentArray<Certificate>;
   exam: Exam;
-  instructor: mongoose.Schema.Types.ObjectId;
-  students: mongoose.Schema.Types.ObjectId[];
+  instructor: mongoose.Types.ObjectId;
+  students: mongoose.Types.ObjectId[];
   isPublished: boolean;
 }
 

@@ -94,18 +94,19 @@ router.put(
       .optional()
       .isString()
       .withMessage("Please enter a valid category description"),
-    body("instructorId")
-      .not()
-      .isEmpty()
-      .withMessage("Please enter an instructor ID"),
   ],
   ValidationRequest,
   currentUser,
   async (req: Request, res: Response, next: NextFunction) => {
-    const id = req.params.id;
+    const userId = req.currentUser!.userId;
+    const courseId = req.params.id;
     const courseDto = req.body as CourseDto;
     try {
-      const course = await courseService.updateOneById(id, courseDto);
+      const course = await courseService.updateOneById(
+        userId,
+        courseId,
+        courseDto
+      );
       if (!course) {
         return next(new BadRequestError("Course not found"));
       }
@@ -118,10 +119,12 @@ router.put(
 
 router.put(
   "/api/courses/:id/publish",
+  currentUser,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const id = req.params.id;
-      const course = await courseService.publishOneById(id);
+      const userId = req.currentUser!.userId;
+      const courseId = req.params.id;
+      const course = await courseService.publishOneById(userId, courseId);
       if (!course) {
         return next(new BadRequestError("Course not found"));
       }
@@ -134,10 +137,12 @@ router.put(
 
 router.put(
   "/api/courses/:id/unpublish",
+  currentUser,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const id = req.params.id;
-      const course = await courseService.unpublishOneById(id);
+      const userId = req.currentUser!.userId;
+      const courseId = req.params.id;
+      const course = await courseService.unpublishOneById(userId, courseId);
       if (!course) {
         return next(new BadRequestError("Course not found"));
       }
@@ -150,10 +155,12 @@ router.put(
 
 router.delete(
   "/api/courses/delete/:id",
+  currentUser,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const id = req.params.id;
-      const course = await courseService.deleteOneById(id);
+      const userId = req.currentUser!.userId;
+      const courseId = req.params.id;
+      const course = await courseService.deleteOneById(userId, courseId);
       if (!course) {
         return next(new BadRequestError("Course not found"));
       }
