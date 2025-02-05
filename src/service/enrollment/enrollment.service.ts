@@ -35,8 +35,8 @@ export class EnrollmentService {
 
     // Create and save the enrollment
     const enrollment = Enrollment.build({
-      courseId: courseId,
-      userId: participantId,
+      course: courseId,
+      participant: participantId,
     });
     enrollment.save();
 
@@ -50,15 +50,15 @@ export class EnrollmentService {
   }
 
   async findAll(userId: mongoose.Types.ObjectId) {
-    const enrollments = await Enrollment.find({ userId: userId }).populate(
-      "courseId"
+    const enrollments = await Enrollment.find({ participant: userId }).populate(
+      "course"
     );
 
     if (!enrollments) {
       return { success: false, message: "No enrollment found" };
     }
 
-    const courses = enrollments.map((enrollment) => enrollment.courseId);
+    const courses = enrollments.map((enrollment) => enrollment.course);
     return {success: true, courses: courses};
   }
 
@@ -73,8 +73,8 @@ export class EnrollmentService {
     if (!enrollment) {
       return { success: false, message: "Participant is not enrolled" };
     }
-    const { courseId } = enrollment;
-    return { success: true, course: courseId };
+    const { course } = enrollment;
+    return { success: true, course: course };
   }
 
   async updateProgress(
@@ -153,4 +153,15 @@ export class EnrollmentService {
     await Enrollment.findByIdAndDelete(enrollmentId);
     return { success: true, message: "Course withdrawn successfully!!" };
   }
+
+  private transformCourse(course: any) {
+    const participants = course.students ? course.students.length : 0;
+    const certifications = course.certificates ? course.certificates.length : 0;
+    const { students, certificates, ...rest } = course;
+    return {
+        ...rest,
+        participants,
+        certifications,
+    };
+}
 }

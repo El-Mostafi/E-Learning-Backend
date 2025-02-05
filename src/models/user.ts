@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import { AuthenticationService } from "../../common";
 import reviewSchema, { Review } from "./schemas/review";
-import certificateSchema from "./schemas/certificate";
+import certificateSchema, { Certificate } from "./schemas/certificate";
 
 export interface UserDocument extends mongoose.Document {
     email: string;
@@ -13,8 +13,8 @@ export interface UserDocument extends mongoose.Document {
     createdAt: Date;
     AboutMe:string;
     enrollments: mongoose.Types.ObjectId[];
-    reviews: Review[];
-    certificates: [];
+    reviews: mongoose.Types.DocumentArray<Review>;
+    certificates: mongoose.Types.DocumentArray<Certificate>;
     speciality?: string;
 
 }

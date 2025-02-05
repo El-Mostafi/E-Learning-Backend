@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 
 export interface Enrollment extends mongoose.Document {
-  courseId: mongoose.Types.ObjectId;
-  userId: mongoose.Types.ObjectId;
+  course: mongoose.Types.ObjectId;
+  participant: mongoose.Types.ObjectId;
   progress: number;
   completed: boolean;
   completedAt: Date | null;
@@ -11,18 +11,18 @@ export interface Enrollment extends mongoose.Document {
 
 export interface EnrollmentModel extends mongoose.Model<Enrollment> {
   build(enrollment: {
-    courseId: mongoose.Types.ObjectId;
-    userId: mongoose.Types.ObjectId;
+    course: mongoose.Types.ObjectId;
+    participant: mongoose.Types.ObjectId;
   }): Enrollment;
 }
 
 const enrollmentSchema = new mongoose.Schema<Enrollment>({
-  courseId: {
+  course: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Course",
     required: true,
   },
-  userId: {
+  participant: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     required: true,

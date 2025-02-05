@@ -1,22 +1,31 @@
 import mongoose from "mongoose";
+import { createReview } from "../../routers/review/dtos/addReview.dto";
 
 export interface Review extends mongoose.Document {
-    userId: mongoose.Types.ObjectId;
-    userName: string;
-    text: string;
-    rating: number;
-    createdAt: Date;
+  userName?: string;
+  userImg?: string;
+  course?: mongoose.Types.ObjectId;
+  text: string;
+  rating: number;
+  createdAt: Date;
+}
+
+export interface ReviewModel extends mongoose.Model<Review> {
+  build(createReview: createReview): Review;
 }
 
 const reviewSchema = new mongoose.Schema<Review>({
-  userId:{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
-  },
   userName: {
     type: String,
-    required: true,
+    required: false,
+  },
+  userImg: {
+    type: String,
+    required: false,
+  },
+  course: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: false,
   },
   text: {
     type: String,
@@ -33,5 +42,14 @@ const reviewSchema = new mongoose.Schema<Review>({
     default: Date.now,
   },
 });
+
+reviewSchema.statics.build = (createReview: createReview) => {
+  return new Review(createReview);
+};
+
+export const Review = mongoose.model<Review, ReviewModel>(
+  "Review",
+  reviewSchema
+);
 
 export default reviewSchema;
