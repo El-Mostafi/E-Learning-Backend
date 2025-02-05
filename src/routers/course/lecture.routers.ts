@@ -1,5 +1,10 @@
-import { currentUser, requireAuth, ValidationRequest } from "../../../common";
-import { Request, Response, Router } from "express";
+import {
+  BadRequestError,
+  currentUser,
+  requireAuth,
+  ValidationRequest,
+} from "../../../common";
+import { NextFunction, Request, Response, Router } from "express";
 import { body } from "express-validator";
 import { LectureService } from "../../service/course/lecture.service";
 import { LectureDto } from "./dtos/course.dto";
@@ -10,26 +15,40 @@ const lectureService = new LectureService();
 
 router.get(
   "/api/courses/:id/sections/:sectionId/lectures",
-  async (req, res) => {
-    const courseId = req.params.id;
-    const sectionId = req.params.sectionId;
-    const lectures = await lectureService.findAll(courseId, sectionId);
-    res.send(lectures);
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const courseId = req.params.id;
+      const sectionId = req.params.sectionId;
+      const result = await lectureService.findAll(courseId, sectionId);
+      if (!result.success) {
+        return next(new BadRequestError(result.message!));
+      }
+      res.send(result.lectures!);
+    } catch (error) {
+      next(error);
+    }
   }
 );
 
 router.get(
   "/api/courses/:id/sections/:sectionId/lectures:lectureId",
-  async (req, res) => {
-    const courseId = req.params.id;
-    const sectionId = req.params.sectionId;
-    const lectureId = req.params.lectureId;
-    const lecture = await lectureService.findOne(
-      courseId,
-      sectionId,
-      lectureId
-    );
-    res.send(lecture);
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const courseId = req.params.id;
+      const sectionId = req.params.sectionId;
+      const lectureId = req.params.lectureId;
+      const result = await lectureService.findOne(
+        courseId,
+        sectionId,
+        lectureId
+      );
+      if (!result.success) {
+        return next(new BadRequestError(result.message!));
+      }
+      res.send(result.lecture!);
+    } catch (error) {
+      next(error);
+    }
   }
 );
 
@@ -47,18 +66,25 @@ router.post(
   ValidationRequest,
   requireAuth,
   currentUser,
-  async (req: Request, res: Response) => {
-    const userId = req.currentUser!.userId;
-    const courseId = req.params.id;
-    const sectionId = req.params.sectionId;
-    const lectureDto: LectureDto = req.body;
-    const result = await lectureService.create(
-      userId,
-      courseId,
-      sectionId,
-      lectureDto
-    );
-    res.send(result);
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.currentUser!.userId;
+      const courseId = req.params.id;
+      const sectionId = req.params.sectionId;
+      const lectureDto: LectureDto = req.body;
+      const result = await lectureService.create(
+        userId,
+        courseId,
+        sectionId,
+        lectureDto
+      );
+      if (!result.success) {
+        return next(new BadRequestError(result.message));
+      }
+      res.send(result.message);
+    } catch (error) {
+      next(error);
+    }
   }
 );
 
@@ -76,20 +102,27 @@ router.put(
   ValidationRequest,
   requireAuth,
   currentUser,
-  async (req: Request, res: Response) => {
-    const userId = req.currentUser!.userId;
-    const courseId = req.params.id;
-    const sectionId = req.params.sectionId;
-    const lectureId = req.params.lectureId;
-    const lectureDto = req.body;
-    const result = await lectureService.update(
-      userId,
-      courseId,
-      sectionId,
-      lectureId,
-      lectureDto
-    );
-    res.send(result);
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.currentUser!.userId;
+      const courseId = req.params.id;
+      const sectionId = req.params.sectionId;
+      const lectureId = req.params.lectureId;
+      const lectureDto = req.body;
+      const result = await lectureService.update(
+        userId,
+        courseId,
+        sectionId,
+        lectureId,
+        lectureDto
+      );
+      if (!result.success) {
+        return next(new BadRequestError(result.message));
+      }
+      res.send(result.message);
+    } catch (error) {
+      next(error);
+    }
   }
 );
 
@@ -97,18 +130,25 @@ router.delete(
   "/api/courses/:id/sections/:sectionId/lectures/:lectureId/delete-lecture",
   requireAuth,
   currentUser,
-  async (req: Request, res: Response) => {
-    const userId = req.currentUser!.userId;
-    const courseId = req.params.id;
-    const sectionId = req.params.sectionId;
-    const lectureId = req.params.lectureId;
-    const result = await lectureService.delete(
-      userId,
-      courseId,
-      sectionId,
-      lectureId
-    );
-    res.send(result);
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.currentUser!.userId;
+      const courseId = req.params.id;
+      const sectionId = req.params.sectionId;
+      const lectureId = req.params.lectureId;
+      const result = await lectureService.delete(
+        userId,
+        courseId,
+        sectionId,
+        lectureId
+      );
+      if (!result.success) {
+        return next(new BadRequestError(result.message));
+      }
+      res.send(result.message);
+    } catch (error) {
+      next(error);
+    }
   }
 );
 

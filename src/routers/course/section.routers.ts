@@ -1,7 +1,13 @@
 import { NextFunction, Request, Response, Router } from "express";
 import { body } from "express-validator";
 import { SectionService } from "../../service/course/section.service";
-import { currentUser, requireAuth, ValidationRequest } from "../../../common";
+import {
+  BadRequestError,
+  currentUser,
+  requireAuth,
+  ValidationRequest,
+} from "../../../common";
+import { SectionDto } from "./dtos/course.dto";
 
 const router = Router();
 const sectionService = new SectionService();
@@ -9,19 +15,33 @@ const sectionService = new SectionService();
 router.get(
   "/api/courses/:id/sections",
   async (req: Request, res: Response, next: NextFunction) => {
-    const courseId = req.params.id;
-    const sections = await sectionService.findAll(courseId);
-    res.send(sections);
+    try {
+      const courseId = req.params.id;
+      const result = await sectionService.findAll(courseId);
+      if (!result.success) {
+        return next(new BadRequestError(result.message!));
+      }
+      res.send(result.sections!);
+    } catch (error) {
+      next(error);
+    }
   }
 );
 
 router.get(
   "/api/courses/:id/sections/:sectionId",
   async (req: Request, res: Response, next: NextFunction) => {
-    const courseId = req.params.id;
-    const sectionId = req.params.sectionId;
-    const section = await sectionService.findOne(courseId, sectionId);
-    res.send(section);
+    try {
+      const courseId = req.params.id;
+      const sectionId = req.params.sectionId;
+      const result = await sectionService.findOne(courseId, sectionId);
+      if (!result.success) {
+        return next(new BadRequestError(result.message!));
+      }
+      res.send(result.section!);
+    } catch (error) {
+      next(error);
+    }
   }
 );
 
@@ -42,11 +62,18 @@ router.post(
   requireAuth,
   currentUser,
   async (req: Request, res: Response, next: NextFunction) => {
-    const userId = req.currentUser!.userId;
-    const courseId = req.params.id;
-    const sectionDto = req.body;
-    const result = await sectionService.create(userId, courseId, sectionDto);
-    res.send(result);
+    try {
+      const userId = req.currentUser!.userId;
+      const courseId = req.params.id;
+      const sectionDto = req.body;
+      const result = await sectionService.create(userId, courseId, sectionDto);
+      if (!result.success) {
+        return next(new BadRequestError(result.message));
+      }
+      res.send(result.message);
+    } catch (error) {
+      next(error);
+    }
   }
 );
 
@@ -68,17 +95,24 @@ router.put(
   currentUser,
 
   async (req: Request, res: Response, next: NextFunction) => {
-    const userId = req.currentUser!.userId;
-    const courseId = req.params.id;
-    const sectionId = req.params.sectionId;
-    const sectionDto = req.body;
-    const result = await sectionService.update(
-      userId,
-      courseId,
-      sectionId,
-      sectionDto
-    );
-    res.send(result);
+    try{
+        const userId = req.currentUser!.userId;
+        const courseId = req.params.id;
+        const sectionId = req.params.sectionId;
+        const sectionDto: SectionDto = req.body;
+        const result = await sectionService.update(
+          userId,
+          courseId,
+          sectionId,
+          sectionDto
+        );
+        if(!result.success){
+            return next(new BadRequestError(result.message))
+        }
+        res.send(result.message);
+    }catch(error){
+        next(error)
+    }
   }
 );
 
@@ -87,11 +121,18 @@ router.delete(
   requireAuth,
   currentUser,
   async (req: Request, res: Response, next: NextFunction) => {
-    const userId = req.currentUser!.userId;
-    const courseId = req.params.id;
-    const sectionId = req.params.sectionId;
-    const result = await sectionService.delete(userId, courseId, sectionId);
-    res.send(result);
+    try{
+        const userId = req.currentUser!.userId;
+        const courseId = req.params.id;
+        const sectionId = req.params.sectionId;
+        const result = await sectionService.delete(userId, courseId, sectionId);
+        if(!result.success){
+            return next(new BadRequestError(result.message))
+        }
+        res.send(result.message);
+    }catch (error){
+        next(error)
+    }
   }
 );
 

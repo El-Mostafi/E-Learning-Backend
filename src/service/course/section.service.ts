@@ -5,7 +5,11 @@ import { SectionDto } from "src/routers/course/dtos/course.dto";
 export class SectionService {
   constructor() {}
 
-  async create(userId: mongoose.Types.ObjectId, courseId: string, sectionDto: SectionDto) {
+  async create(
+    userId: mongoose.Types.ObjectId,
+    courseId: string,
+    sectionDto: SectionDto
+  ) {
     const course = await Course.findById(courseId);
     if (!course) {
       return { success: false, message: "Course not found" };
@@ -32,7 +36,7 @@ export class SectionService {
     if (!course) {
       return { success: false, message: "Course not found" };
     }
-    return course.sections;
+    return { success: true, sections: course.sections };
   }
 
   async findOne(courseId: string, sectionId: string) {
@@ -44,17 +48,23 @@ export class SectionService {
     if (!section) {
       return { success: false, message: "Section not found" };
     }
-    return section;
+    return { success: true, section: section };
   }
 
-  async update(userId: mongoose.Types.ObjectId, courseId: string, sectionId: string, sectionDto: SectionDto) {
+  async update(
+    userId: mongoose.Types.ObjectId,
+    courseId: string,
+    sectionId: string,
+    sectionDto: SectionDto
+  ) {
     const course = await Course.findById(courseId);
     if (!course) {
       return { success: false, message: "Course not found" };
     }
     // Check if the user is the instructor of the course
     if (course.instructor.toString() !== userId.toString()) {
-      return { success: false, message: "Unauthorized" };}
+      return { success: false, message: "Unauthorized" };
+    }
 
     const section = course.sections.id(sectionId);
     if (!section) {
@@ -68,7 +78,11 @@ export class SectionService {
     return { success: true, message: "Section updated successfully" };
   }
 
-  async delete(userId: mongoose.Types.ObjectId, courseId: string, sectionId: string) {
+  async delete(
+    userId: mongoose.Types.ObjectId,
+    courseId: string,
+    sectionId: string
+  ) {
     const course = await Course.findById(courseId);
     if (!course) {
       return { success: false, message: "Course not found" };

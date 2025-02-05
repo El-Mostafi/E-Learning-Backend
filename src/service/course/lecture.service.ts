@@ -46,7 +46,7 @@ export class LectureService {
     if (!section) {
       return { success: false, message: "Section not found" };
     }
-    return section.lectures;
+    return { success: true, lectures: section.lectures };
   }
 
   async findOne(courseId: string, sectionId: string, lectureId: string) {
@@ -62,7 +62,7 @@ export class LectureService {
     if (!lecture) {
       return { success: false, message: "Lecture not found" };
     }
-    return lecture;
+    return { success: true, lecture: lecture };
   }
 
   async update(

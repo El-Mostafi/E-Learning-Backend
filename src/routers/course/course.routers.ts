@@ -13,17 +13,28 @@ const router = Router();
 const courseService = new CourseService();
 
 router.get("/api/courses", async (req, res, next) => {
-  const courses = await courseService.findAll();
-  res.send(courses);
+  try {
+    const result = await courseService.findAll();
+    if (!result.success) {
+      return next(new BadRequestError(result.message!));
+    }
+    res.send(result.courses!);
+  } catch (error) {
+    next(error);
+  }
 });
 
 router.get("/api/courses/:id", async (req, res, next) => {
-  const id = req.params.id;
-  const course = await courseService.findOneById(id);
-  if (!course) {
-    return next(new BadRequestError("Course not found"));
+  try {
+    const id = req.params.id;
+    const result = await courseService.findOneById(id);
+    if (!result.success) {
+      return next(new BadRequestError(result.message!));
+    }
+    res.send(result.course!);
+  } catch (error) {
+    next(error);
   }
-  res.send(course);
 });
 
 router.post(
@@ -58,11 +69,14 @@ router.post(
   requireAuth,
   currentUser,
   async (req: Request, res: Response, next: NextFunction) => {
-    const courseDto = req.body as CourseDto;
     try {
+      const courseDto = req.body as CourseDto;
       const userId = req.currentUser!.userId;
-      const course = await courseService.create(courseDto, userId);
-      res.status(201).send(course);
+      const result = await courseService.create(courseDto, userId);
+      if (!result.success) {
+        return next(new BadRequestError(result.message));
+      }
+      res.status(201).send(result.message);
     } catch (error) {
       next(error);
     }
@@ -101,19 +115,19 @@ router.put(
   requireAuth,
   currentUser,
   async (req: Request, res: Response, next: NextFunction) => {
-    const userId = req.currentUser!.userId;
-    const courseId = req.params.id;
-    const courseDto = req.body as CourseDto;
     try {
-      const course = await courseService.updateOneById(
+      const userId = req.currentUser!.userId;
+      const courseId = req.params.id;
+      const courseDto = req.body as CourseDto;
+      const result = await courseService.updateOneById(
         userId,
         courseId,
         courseDto
       );
-      if (!course) {
-        return next(new BadRequestError("Course not found"));
+      if (!result.success) {
+        return next(new BadRequestError(result.message));
       }
-      res.send(course);
+      res.send(result.message);
     } catch (error) {
       next(error);
     }
@@ -128,11 +142,11 @@ router.put(
     try {
       const userId = req.currentUser!.userId;
       const courseId = req.params.id;
-      const course = await courseService.publishOneById(userId, courseId);
-      if (!course) {
-        return next(new BadRequestError("Course not found"));
+      const result = await courseService.publishOneById(userId, courseId);
+      if (!result.success) {
+        return next(new BadRequestError(result.message));
       }
-      res.send(course);
+      res.send(result.message);
     } catch (error) {
       next(error);
     }
@@ -147,11 +161,11 @@ router.put(
     try {
       const userId = req.currentUser!.userId;
       const courseId = req.params.id;
-      const course = await courseService.unpublishOneById(userId, courseId);
-      if (!course) {
-        return next(new BadRequestError("Course not found"));
+      const result = await courseService.unpublishOneById(userId, courseId);
+      if (!result.success) {
+        return next(new BadRequestError(result.message));
       }
-      res.send(course);
+      res.send(result.message);
     } catch (error) {
       next(error);
     }
@@ -166,11 +180,11 @@ router.delete(
     try {
       const userId = req.currentUser!.userId;
       const courseId = req.params.id;
-      const course = await courseService.deleteOneById(userId, courseId);
-      if (!course) {
-        return next(new BadRequestError("Course not found"));
+      const result = await courseService.deleteOneById(userId, courseId);
+      if (!result.success) {
+        return next(new BadRequestError(result.message));
       }
-      res.send(course);
+      res.send(result.message);
     } catch (error) {
       next(error);
     }
