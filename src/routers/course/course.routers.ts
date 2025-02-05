@@ -5,6 +5,7 @@ import { CourseService } from "../../service/course/course.service";
 import {
   BadRequestError,
   currentUser,
+  requireAuth,
   ValidationRequest,
 } from "../../../common";
 
@@ -54,6 +55,7 @@ router.post(
       .withMessage("Please enter a valid category description"),
   ],
   ValidationRequest,
+  requireAuth,
   currentUser,
   async (req: Request, res: Response, next: NextFunction) => {
     const courseDto = req.body as CourseDto;
@@ -96,6 +98,7 @@ router.put(
       .withMessage("Please enter a valid category description"),
   ],
   ValidationRequest,
+  requireAuth,
   currentUser,
   async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.currentUser!.userId;
@@ -119,6 +122,7 @@ router.put(
 
 router.put(
   "/api/courses/:id/publish",
+  requireAuth,
   currentUser,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -137,6 +141,7 @@ router.put(
 
 router.put(
   "/api/courses/:id/unpublish",
+  requireAuth,
   currentUser,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -155,6 +160,7 @@ router.put(
 
 router.delete(
   "/api/courses/delete/:id",
+  requireAuth,
   currentUser,
   async (req: Request, res: Response, next: NextFunction) => {
     try {

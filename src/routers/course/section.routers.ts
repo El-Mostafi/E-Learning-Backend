@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response, Router } from "express";
 import { body } from "express-validator";
 import { SectionService } from "../../service/course/section.service";
-import { currentUser, ValidationRequest } from "../../../common";
+import { currentUser, requireAuth, ValidationRequest } from "../../../common";
 
 const router = Router();
 const sectionService = new SectionService();
@@ -39,6 +39,7 @@ router.post(
       .withMessage("Please enter a preview status"),
   ],
   ValidationRequest,
+  requireAuth,
   currentUser,
   async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.currentUser!.userId;
@@ -62,22 +63,29 @@ router.put(
       .isEmpty()
       .withMessage("Please enter a preview status"),
   ],
-    ValidationRequest,
-    currentUser,
+  ValidationRequest,
+  requireAuth,
+  currentUser,
 
   async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.currentUser!.userId;
     const courseId = req.params.id;
     const sectionId = req.params.sectionId;
     const sectionDto = req.body;
-    const result = await sectionService.update(userId, courseId, sectionId, sectionDto);
+    const result = await sectionService.update(
+      userId,
+      courseId,
+      sectionId,
+      sectionDto
+    );
     res.send(result);
   }
 );
 
 router.delete(
   "/api/courses/:id/sections/:sectionId/delete-section",
-    currentUser,
+  requireAuth,
+  currentUser,
   async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.currentUser!.userId;
     const courseId = req.params.id;

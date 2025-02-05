@@ -1,4 +1,4 @@
-import { currentUser, ValidationRequest } from "../../../common";
+import { currentUser, requireAuth, ValidationRequest } from "../../../common";
 import { Request, Response, Router } from "express";
 import { body } from "express-validator";
 import { LectureService } from "../../service/course/lecture.service";
@@ -24,7 +24,11 @@ router.get(
     const courseId = req.params.id;
     const sectionId = req.params.sectionId;
     const lectureId = req.params.lectureId;
-    const lecture = await lectureService.findOne(courseId, sectionId, lectureId);
+    const lecture = await lectureService.findOne(
+      courseId,
+      sectionId,
+      lectureId
+    );
     res.send(lecture);
   }
 );
@@ -41,13 +45,19 @@ router.post(
       .withMessage("Please enter a thumbnail URL"),
   ],
   ValidationRequest,
+  requireAuth,
   currentUser,
   async (req: Request, res: Response) => {
     const userId = req.currentUser!.userId;
     const courseId = req.params.id;
     const sectionId = req.params.sectionId;
     const lectureDto: LectureDto = req.body;
-    const result = await lectureService.create(userId, courseId, sectionId, lectureDto);
+    const result = await lectureService.create(
+      userId,
+      courseId,
+      sectionId,
+      lectureDto
+    );
     res.send(result);
   }
 );
@@ -64,7 +74,8 @@ router.put(
       .withMessage("Please enter a thumbnail URL"),
   ],
   ValidationRequest,
-    currentUser,
+  requireAuth,
+  currentUser,
   async (req: Request, res: Response) => {
     const userId = req.currentUser!.userId;
     const courseId = req.params.id;
@@ -72,7 +83,7 @@ router.put(
     const lectureId = req.params.lectureId;
     const lectureDto = req.body;
     const result = await lectureService.update(
-        userId,
+      userId,
       courseId,
       sectionId,
       lectureId,
@@ -84,13 +95,19 @@ router.put(
 
 router.delete(
   "/api/courses/:id/sections/:sectionId/lectures/:lectureId/delete-lecture",
-    currentUser,
+  requireAuth,
+  currentUser,
   async (req: Request, res: Response) => {
     const userId = req.currentUser!.userId;
     const courseId = req.params.id;
     const sectionId = req.params.sectionId;
     const lectureId = req.params.lectureId;
-    const result = await lectureService.delete(userId, courseId, sectionId, lectureId);
+    const result = await lectureService.delete(
+      userId,
+      courseId,
+      sectionId,
+      lectureId
+    );
     res.send(result);
   }
 );

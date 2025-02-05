@@ -1,4 +1,4 @@
-import { BadRequestError, currentUser } from "../../../common";
+import { BadRequestError, currentUser, requireAuth } from "../../../common";
 import { NextFunction, Request, Response, Router } from "express";
 import { EnrollmentService } from "../../service/enrollment/enrollment.service";
 import mongoose, { trusted } from "mongoose";
@@ -8,6 +8,7 @@ const enrollmentService = new EnrollmentService();
 
 router.post(
   "/api/courses/:courseId/enroll",
+  requireAuth,
   currentUser,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -26,6 +27,7 @@ router.post(
 
 router.get(
   "/api/my-courses/enrolled",
+  requireAuth,
   currentUser,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -43,6 +45,7 @@ router.get(
 
 router.get(
   "/api/my-courses/enrolled/:courseId",
+  requireAuth,
   currentUser,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -61,6 +64,7 @@ router.get(
 
 router.put(
   "/api/my-courses/enrolled:courseId/update-progress",
+  requireAuth,
   currentUser,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -81,6 +85,7 @@ router.put(
 
 router.delete(
   "/api/my-courses/:courseId/enrollment/withdraw",
+  requireAuth,
   currentUser,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
