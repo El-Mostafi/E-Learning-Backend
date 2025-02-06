@@ -2,14 +2,16 @@ import { BadRequestError, currentUser, requireAuth } from "../../../common";
 import { NextFunction, Request, Response, Router } from "express";
 import { EnrollmentService } from "../../service/enrollment/enrollment.service";
 import mongoose, { trusted } from "mongoose";
+import { roleIsStudent } from "../../../common/src/middllewares/validate-roles";
 
 const router = Router();
 const enrollmentService = new EnrollmentService();
 
 router.post(
   "/api/courses/:courseId/enroll",
-  requireAuth,
   currentUser,
+  requireAuth,
+  roleIsStudent,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.currentUser!.userId;
@@ -27,8 +29,9 @@ router.post(
 
 router.get(
   "/api/my-courses/enrolled",
-  requireAuth,
   currentUser,
+  requireAuth,
+  roleIsStudent,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.currentUser!.userId;
@@ -45,8 +48,9 @@ router.get(
 
 router.get(
   "/api/my-courses/enrolled/:courseId",
-  requireAuth,
   currentUser,
+  requireAuth,
+  roleIsStudent,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.currentUser!.userId;
@@ -64,8 +68,9 @@ router.get(
 
 router.put(
   "/api/my-courses/enrolled:courseId/update-progress",
-  requireAuth,
   currentUser,
+  requireAuth,
+  roleIsStudent,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const courseId = new mongoose.Types.ObjectId(req.params.courseId);
@@ -85,8 +90,9 @@ router.put(
 
 router.delete(
   "/api/my-courses/:courseId/enrollment/withdraw",
-  requireAuth,
   currentUser,
+  requireAuth,
+  roleIsStudent,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const courseId = new mongoose.Types.ObjectId(req.params.courseId);
