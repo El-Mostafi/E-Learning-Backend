@@ -9,6 +9,7 @@ declare global {
     userId: mongoose.Types.ObjectId;
     userName: string;
     emailConfirmed: boolean;
+    role: "instructor" | "student" | "admin";
   }
   namespace Express {
     interface Request {
