@@ -15,7 +15,7 @@ const courseService = new CourseService();
 
 router.get("/api/courses", async (req, res, next) => {
   try {
-    const result = await courseService.findAll();
+    const result = await courseService.findPublishedCourses();
     if (!result.success) {
       return next(new BadRequestError(result.message!));
     }
