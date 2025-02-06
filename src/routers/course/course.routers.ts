@@ -38,6 +38,18 @@ router.get("/api/courses/:id", async (req, res, next) => {
   }
 });
 
+router.get(
+  "/api/courses/category/:categoryId",
+  async (req, res, next) => {
+    try{
+        const categoryId = req.params.categoryId;
+        const result = courseService.findAllByCategoryId(categoryId);
+    }catch(error){
+        next(error)
+    }
+  }
+);
+
 router.post(
   "/api/courses/create-course",
   [
