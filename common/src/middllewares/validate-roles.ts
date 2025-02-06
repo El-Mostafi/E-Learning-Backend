@@ -1,4 +1,4 @@
-import { NextFunction, Request } from "express";
+import { NextFunction, Request, Response } from "express";
 import { NotAutherizedError } from "../errors/not-autherized-error";
 
 export const roleIsInstructor = async (

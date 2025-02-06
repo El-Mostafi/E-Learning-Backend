@@ -8,6 +8,7 @@ import {
   ValidationRequest,
 } from "../../../common";
 import { SectionDto } from "./dtos/course.dto";
+import { roleIsInstructor } from "../../../common/src/middllewares/validate-roles";
 
 const router = Router();
 const sectionService = new SectionService();
@@ -59,8 +60,9 @@ router.post(
       .withMessage("Please enter a preview status"),
   ],
   ValidationRequest,
-  requireAuth,
   currentUser,
+  requireAuth,
+  roleIsInstructor,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.currentUser!.userId;
@@ -91,47 +93,49 @@ router.put(
       .withMessage("Please enter a preview status"),
   ],
   ValidationRequest,
-  requireAuth,
   currentUser,
+  requireAuth,
+  roleIsInstructor,
 
   async (req: Request, res: Response, next: NextFunction) => {
-    try{
-        const userId = req.currentUser!.userId;
-        const courseId = req.params.id;
-        const sectionId = req.params.sectionId;
-        const sectionDto: SectionDto = req.body;
-        const result = await sectionService.update(
-          userId,
-          courseId,
-          sectionId,
-          sectionDto
-        );
-        if(!result.success){
-            return next(new BadRequestError(result.message))
-        }
-        res.send(result.message);
-    }catch(error){
-        next(error)
+    try {
+      const userId = req.currentUser!.userId;
+      const courseId = req.params.id;
+      const sectionId = req.params.sectionId;
+      const sectionDto: SectionDto = req.body;
+      const result = await sectionService.update(
+        userId,
+        courseId,
+        sectionId,
+        sectionDto
+      );
+      if (!result.success) {
+        return next(new BadRequestError(result.message));
+      }
+      res.send(result.message);
+    } catch (error) {
+      next(error);
     }
   }
 );
 
 router.delete(
   "/api/courses/:id/sections/:sectionId/delete-section",
-  requireAuth,
   currentUser,
+  requireAuth,
+  roleIsInstructor,
   async (req: Request, res: Response, next: NextFunction) => {
-    try{
-        const userId = req.currentUser!.userId;
-        const courseId = req.params.id;
-        const sectionId = req.params.sectionId;
-        const result = await sectionService.delete(userId, courseId, sectionId);
-        if(!result.success){
-            return next(new BadRequestError(result.message))
-        }
-        res.send(result.message);
-    }catch (error){
-        next(error)
+    try {
+      const userId = req.currentUser!.userId;
+      const courseId = req.params.id;
+      const sectionId = req.params.sectionId;
+      const result = await sectionService.delete(userId, courseId, sectionId);
+      if (!result.success) {
+        return next(new BadRequestError(result.message));
+      }
+      res.send(result.message);
+    } catch (error) {
+      next(error);
     }
   }
 );

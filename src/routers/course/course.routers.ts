@@ -8,6 +8,7 @@ import {
   requireAuth,
   ValidationRequest,
 } from "../../../common";
+import { roleIsInstructor } from "../../../common/src/middllewares/validate-roles";
 
 const router = Router();
 const courseService = new CourseService();
@@ -66,8 +67,9 @@ router.post(
       .withMessage("Please enter a valid category description"),
   ],
   ValidationRequest,
-  requireAuth,
   currentUser,
+  requireAuth,
+  roleIsInstructor,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const courseDto = req.body as CourseDto;
@@ -112,8 +114,9 @@ router.put(
       .withMessage("Please enter a valid category description"),
   ],
   ValidationRequest,
-  requireAuth,
   currentUser,
+  requireAuth,
+  roleIsInstructor,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.currentUser!.userId;
@@ -136,8 +139,9 @@ router.put(
 
 router.put(
   "/api/courses/:id/publish",
-  requireAuth,
   currentUser,
+  requireAuth,
+  roleIsInstructor,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.currentUser!.userId;
@@ -155,8 +159,9 @@ router.put(
 
 router.put(
   "/api/courses/:id/unpublish",
-  requireAuth,
   currentUser,
+  requireAuth,
+  roleIsInstructor,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.currentUser!.userId;
@@ -174,8 +179,9 @@ router.put(
 
 router.delete(
   "/api/courses/delete/:id",
-  requireAuth,
   currentUser,
+  requireAuth,
+  roleIsInstructor,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.currentUser!.userId;

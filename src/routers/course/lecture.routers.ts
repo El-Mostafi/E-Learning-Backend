@@ -8,6 +8,7 @@ import { NextFunction, Request, Response, Router } from "express";
 import { body } from "express-validator";
 import { LectureService } from "../../service/course/lecture.service";
 import { LectureDto } from "./dtos/course.dto";
+import { roleIsInstructor } from "../../../common/src/middllewares/validate-roles";
 
 const router = Router();
 
@@ -64,8 +65,9 @@ router.post(
       .withMessage("Please enter a thumbnail URL"),
   ],
   ValidationRequest,
-  requireAuth,
   currentUser,
+  requireAuth,
+  roleIsInstructor,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.currentUser!.userId;
@@ -100,8 +102,9 @@ router.put(
       .withMessage("Please enter a thumbnail URL"),
   ],
   ValidationRequest,
-  requireAuth,
   currentUser,
+  requireAuth,
+  roleIsInstructor,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.currentUser!.userId;
@@ -128,8 +131,9 @@ router.put(
 
 router.delete(
   "/api/courses/:id/sections/:sectionId/lectures/:lectureId/delete-lecture",
-  requireAuth,
   currentUser,
+  requireAuth,
+  roleIsInstructor,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.currentUser!.userId;
