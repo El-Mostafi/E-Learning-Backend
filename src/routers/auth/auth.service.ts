@@ -26,6 +26,7 @@ export class AuthService {
         userId: newUser.id,
         userName: createUserDto.userName,
         emailConfirmed: false,
+        role: createUserDto.role
       },
       process.env.JWT_KEY!
     );
@@ -54,6 +55,7 @@ export class AuthService {
         userId: user.id,
         userName: user.userName,
         emailConfirmed: user.emailConfirmed,
+        role: user.role
       },
       process.env.JWT_KEY!
     );
@@ -186,6 +188,7 @@ export class AuthService {
           userId: user.id,
           userName: user.userName,
           emailConfirmed: user.emailConfirmed,
+          role: user.role
         },
         process.env.JWT_KEY!
       );
