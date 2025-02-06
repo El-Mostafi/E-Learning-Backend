@@ -16,14 +16,20 @@ router.post(
       .isLength({ min: 8, max: 20 })
       .withMessage("Password must be between 8 and 20 characters"),
     body("userName").not().isEmpty().withMessage("Please enter a user name"),
+    body("role").not().isEmpty().withMessage("Please select a role"),
   ],
   ValidationRequest,
   async (req: Request, res: Response, next: NextFunction) => {
     if (req.session?.jwt != null) {
       return next(new BadRequestError("Already signed in"));
     }
-    const { email, password, userName } = req.body;
-    const result = await authService.signup({ email, password, userName });
+    const { email, password, userName, role } = req.body;
+    const result = await authService.signup({
+      email,
+      password,
+      userName,
+      role,
+    });
     if (result.message) return next(new BadRequestError(result.message));
 
     req.session = {
@@ -50,14 +56,20 @@ router.post(
       .isEmpty()
       .isLength({ min: 8, max: 20 })
       .withMessage("Password must be between 8 and 20 characters"),
+    body("role")
+      .not()
+      .isEmpty()
+      .isLength({ min: 8, max: 20 })
+      .withMessage("Please select a role"),
   ],
   ValidationRequest,
   async (req: Request, res: Response, next: NextFunction) => {
-    const { email, password } = req.body;
+    const { email, password, role } = req.body;
     const result = await authService.signin({
       email,
       password,
       userName: email,
+      role,
     });
 
     if (result.message) return next(new BadRequestError(result.message));
