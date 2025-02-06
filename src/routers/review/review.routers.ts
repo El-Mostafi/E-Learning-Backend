@@ -9,13 +9,15 @@ import { NextFunction, Request, Response, Router } from "express";
 import { AddReviewDto } from "./dtos/addReview.dto";
 import { body } from "express-validator";
 import mongoose from "mongoose";
+import { roleIsStudent } from "../../../common/src/middllewares/validate-roles";
 
 const router = Router();
 const reviewService = new ReviewService();
 router.get(
   "/api/my-reviews",
-  requireAuth,
   currentUser,
+  requireAuth,
+  roleIsStudent,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.currentUser!.userId;
@@ -33,8 +35,9 @@ router.get(
 
 router.get(
   "/api/my-courses/:courseId/my-review",
-  requireAuth,
   currentUser,
+  requireAuth,
+  roleIsStudent,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.currentUser!.userId;
@@ -83,8 +86,9 @@ router.post(
       .withMessage("Text is required"),
   ],
   ValidationRequest,
-  requireAuth,
   currentUser,
+  requireAuth,
+  roleIsStudent,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.currentUser!.userId;
@@ -119,8 +123,9 @@ router.put(
       .withMessage("Text is required"),
   ],
   ValidationRequest,
-  requireAuth,
   currentUser,
+  requireAuth,
+  roleIsStudent,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const courseId = new mongoose.Types.ObjectId(req.params.courseId);
@@ -149,8 +154,9 @@ router.put(
 
 router.delete(
   "/api/my-reviews/:reviewId/remove-review",
-  requireAuth,
   currentUser,
+  requireAuth,
+  roleIsStudent,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.currentUser!.userId;
