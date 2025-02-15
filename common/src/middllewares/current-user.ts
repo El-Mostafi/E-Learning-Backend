@@ -16,15 +16,19 @@ declare global {
     }
 }
 export const currentUser =(req: Request, res: Response, next: NextFunction)=>{
-    if(req.session?.jwt ==null){
-        return next();
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        res.status(401).send({ message: "Unauthorized" });
+        return;
     }
-    try{
-        const payload = authenticationService.verifyJwt(req.session?.jwt, process.env.JWT_KEY!);
+
+    try {
+        const token = authHeader.split(" ")[1]; // Extract token after "Bearer "
+        const payload = authenticationService.verifyJwt(token, process.env.JWT_KEY!);
         req.currentUser = payload;
-        
-    }catch(err){
-        return next(err);
+        next();
+    } catch (err) {
+        res.status(401).send({ message: "Invalid token" });
+        return;
     }
-    next();
 }

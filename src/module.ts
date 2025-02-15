@@ -12,7 +12,7 @@ export class AppModule {
     constructor(public app: Application ) {
         app.set('trust proxy', true);
         app.use(cors({
-            origin: '*',
+            origin: process.env.Frontend_URL,
             credentials:true,
             optionsSuccessStatus: 200 
         }))
@@ -35,7 +35,7 @@ export class AppModule {
             } catch (err: any) {
                 throw new Error(err);
             }
-            this.app.use(currentUser);
+            // this.app.use(currentUser);
 
             this.app.use(authRouters);
             this.app.use(errorHandler);
