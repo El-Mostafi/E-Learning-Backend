@@ -2,6 +2,8 @@ import { Router, Request, Response, NextFunction } from 'express'
 import { authService } from './auth.service';
 import { currentUser, BadRequestError,ValidationRequest } from '../../../common'
 import {body} from 'express-validator';
+import UserOTPVerification from "../../models/userOTPVerification";
+
 const router = Router();
 
 router.post('/signup',
@@ -14,19 +16,14 @@ router.post('/signup',
     ],
 ValidationRequest,
 async (req: Request, res: Response, next: NextFunction) => {
-    if(req.session?.jwt != null){
-        return next(new BadRequestError('Already signed in'));
-    }
     const {email, password, userName} = req.body;
-    const result = await authService.signup({ email, password, userName });
+    const result = await authService.signup({ email, password,RememberMe:false, userName });
     if(result.message) return next(new BadRequestError(result.message));
 
     
-    req.session ={
-        jwt: result.jwt
-    }
+    
     try{
-        await authService.sendOtpVerificationEmail(email,userName);
+        await authService.sendOtpVerificationEmail(email);
     res.status(201).send({message: 'Verification email sent'});
 
     }catch(err){
@@ -44,14 +41,19 @@ router.post('/signin',
         .isLength({min: 8, max: 20})
         .withMessage('Password must be between 8 and 20 characters')
     ],ValidationRequest ,async (req: Request, res: Response, next: NextFunction) => {
-    const {email, password} = req.body;
-    const result = await authService.signin({ email, password,userName:email });
+    const {email, password ,RememberMe} = req.body;
+    const result = await authService.signin({ 
+        email, 
+        password, 
+        RememberMe: RememberMe ?? false, 
+        userName: email 
+    });
 
     if(result.message) return next(new BadRequestError(result.message))
 
     req.session = { jwt: result.jwt };
 
-    res.status(201).send({message: 'User signed in successfully', user: result.user});
+    res.status(201).send({jwt: result.jwt, message: 'User signed in successfully', user: result.user});
     
     
 });
@@ -77,40 +79,46 @@ router.get('/current-user',currentUser, (req: Request, res: Response, next: Next
 
 router.post('/verify-email',
     [
-        body('otp').not().isEmpty().withMessage('Please enter an OTP')
+        body('email').isEmail().withMessage('Please enter a valid email')
     ],
     ValidationRequest,
     async (req: Request, res: Response, next: NextFunction) => {
-        const {  otp } = req.body;
-        if(req.currentUser==null) return next(new BadRequestError('Registration not completed yet. Please sign up or login'));
-        const email=req.currentUser!.email;
-        const result = await authService.verifyEmail(email, otp);
+        const { email } = req.body;
 
-        if (result.message) return next(new BadRequestError(result.message));
-
-        const userResult = await authService.verifyUser(email,req.currentUser!.userName);
+        const userResult = await authService.verifyUser(email,email);
 
         if (userResult.message) return next(new BadRequestError(userResult.message));
 
-        req.session = {
-            jwt: userResult.jwt
-        };
-        res.status(200).json({ message: result.success,user: userResult.user});
+        
+        res.status(200).json({jwt: userResult.jwt, message: "OTP verified successfully",user: userResult.user});
     }
 );
 router.post('/resendEmail',async (req: Request, res: Response, next: NextFunction) => {
-    if(req.currentUser==null) return next(new BadRequestError('Registration not completed yet. Please sign up or login'));
-    const email=req.currentUser!.email;
-    const userName=req.currentUser!.userName;
-    await authService.sendOtpVerificationEmail(email,userName);
-    res.status(201).send({message: 'Verification email sent'});
+    const { email,Source } = req.body;
+
+    if(email==null || Source==null) return next(new BadRequestError('Registration not completed yet. Please sign up or login'));
+    // const email=req.currentUser!.email;
+    // const userName=req.currentUser!.userName;
+    // Delete the OTP record after successful verification
+    await UserOTPVerification.deleteMany({ email });
+    if(Source=='Verification'){
+        await authService.sendOtpVerificationEmail(email);
+    }
+    else if(Source=='ResetPassword') {
+        await authService.RequestResetEmail(email);
+    }
+    else{
+        return next(new BadRequestError('Invalid Source'));
+    }
+    res.status(201).send({message: 'Code sent successfully'});
 });
 router.post('/request-reset-password', 
     [body('email').isEmail().not().isEmpty().withMessage('Please enter an email')],
     ValidationRequest,
     async (req: Request, res: Response, next: NextFunction) => {
         const { email } = req.body;
-
+        // Delete the OTP record after successful verification
+        await UserOTPVerification.deleteMany({ email });
         const result = await authService.RequestResetEmail(email);
 
         if (result.message) return next(new BadRequestError(result.message));
@@ -121,8 +129,7 @@ router.post('/request-reset-password',
 
 router.post('/reset-password', 
     [
-        body('email').not().isEmpty().withMessage('Please enter an email'),
-        body('otp').not().isEmpty().withMessage('Please enter the OTP'),
+        body('email').not().isEmpty().isEmail().withMessage('Please enter an email'),
         body('newPassword')
             .not().isEmpty()
             .isLength({ min: 8, max: 20 })
@@ -130,14 +137,29 @@ router.post('/reset-password',
     ],
     ValidationRequest,
     async (req: Request, res: Response, next: NextFunction) => {
-        const { email, otp, newPassword } = req.body;
+        const { email, newPassword } = req.body;
 
-        const result = await authService.ResetPassword(email, otp, newPassword);
+        const result = await authService.ResetPassword(email, newPassword);
 
         if (!result.success) return next(new BadRequestError(result.message ));
 
         res.status(200).json({ message: result.message });
     }
 );
+router.post('/verify-Otp', 
+    [
+        body('email').not().isEmpty().isEmail().withMessage('Please enter an email'),
+        body('otp').not().isEmpty().withMessage('Please enter the OTP')
+    ],
+    ValidationRequest,
+    async (req: Request, res: Response, next: NextFunction) => {
+        const { email, otp } = req.body;
 
+        const result = await authService.verifyOtp(email, otp);
+
+        if (result.message) return next(new BadRequestError(result.message ));
+
+        res.status(200).json({ message: result.success });
+    }
+);
 export { router as authRouters }
