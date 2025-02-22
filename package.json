@@ -19,6 +19,7 @@
     "@types/mongoose": "^5.11.97",
     "@types/nodemailer": "^6.4.17",
     "@types/validator": "^13.12.2",
+    "cloudinary": "^2.5.1",
     "cookie-session": "^2.1.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",

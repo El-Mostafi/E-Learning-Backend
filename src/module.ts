@@ -7,6 +7,8 @@ import cors from "cors";
 import mongoose from "mongoose";
 import {requireAuth, currentUser,errorHandler,NotFundError} from "../common";
 import { authRouters } from '../src/routers/auth/auth.routers';
+import { cloudRouters } from '../src/routers/cloudinary/cloud.routers';
+
 
 export class AppModule {
     constructor(public app: Application ) {
@@ -38,6 +40,7 @@ export class AppModule {
             // this.app.use(currentUser);
 
             this.app.use(authRouters);
+            this.app.use(cloudRouters);
             this.app.use(errorHandler);
 
 
