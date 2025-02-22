@@ -1,13 +1,14 @@
 import { Request, Response, NextFunction } from "express";
 import jwt  from "jsonwebtoken";
 import { authenticationService } from "../services/authentication";
-import { BadRequestError } from "../errors/bad-request-error";
+import { NotAutherizedError } from "../errors/not-autherized-error";
 declare global {
     interface JwtPayload {
         email: string;
         userId: string;
         userName: string;
         emailConfirmed: boolean;
+        profileImg: string;
     }
     namespace Express {
         interface Request {
@@ -16,14 +17,14 @@ declare global {
     }
 }
 export const currentUser =(req: Request, res: Response, next: NextFunction)=>{
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        res.status(401).send({ message: "Unauthorized" });
-        return;
-    }
+    // const authHeader = req.headers.authorization;
+    // if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    //     // res.status(401).send({ message: "Unauthorized" });
+    //     return next(new NotAutherizedError());
+    // }
 
     try {
-        const token = authHeader.split(" ")[1]; // Extract token after "Bearer "
+        const token = req.headers.authorization!.split(" ")[1]; // Extract token after "Bearer "
         const payload = authenticationService.verifyJwt(token, process.env.JWT_KEY!);
         req.currentUser = payload;
         next();

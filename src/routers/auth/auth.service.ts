@@ -4,6 +4,7 @@ import { userOTPVerificationService } from "../../service/userOTPVerification.se
 import { AuthDto } from "./dtos/auth.dto";
 import { AuthenticationService } from "../../../common";
 import UserOTPVerification from "../../models/userOTPVerification";
+import jwt from 'jsonwebtoken';
 
 export class AuthService {
   constructor(
@@ -45,6 +46,7 @@ export class AuthService {
         userId: user.id,
         userName: user.userName,
         emailConfirmed: user.emailConfirmed,
+        profileImg: user.profileImg,
       },
       process.env.JWT_KEY!,
       signinDto.RememberMe
@@ -181,6 +183,7 @@ export class AuthService {
           userId: user.id,
           userName: user.userName,
           emailConfirmed: user.emailConfirmed,
+          profileImg: user.profileImg,
         },
         process.env.JWT_KEY!,
         false
@@ -285,6 +288,47 @@ export class AuthService {
 
     return { success: true, message: result.message as string };
   }
+  async updateUser(userId: string, userName: string, profileImg: string): Promise<{ message: string, success?: boolean,jwt?:string }> {
+    try {
+      const updateData: { userName: string; profileImg: string } = {
+        userName: "",
+        profileImg: "",
+      };
+  
+      if (userName) {
+        const existingUsername = await userService.findOneByUserName(userName);
+        if (existingUsername && existingUsername.id !== userId) {
+          return { message: 'Username is already taken', success: false };
+        }
+        updateData.userName = userName;
+      }
+  
+      if (profileImg) updateData.profileImg = profileImg;
+  
+      const updatedUser = await userService.updateUser(userId, updateData);
+      
+      if (!updatedUser) {
+        return { message: 'User not found', success: false };
+      }
+      const jwt = this.authenticationService.generateJwt(
+        {
+          email: updatedUser.email,
+          userId: updatedUser.id,
+          userName: updatedUser.userName,
+          emailConfirmed: updatedUser.emailConfirmed,
+          profileImg: updatedUser.profileImg,
+        },
+        process.env.JWT_KEY!,
+        false
+      );
+  
+      return { message: 'User updated successfully', success: true, jwt: jwt };
+  
+    } catch (error) {
+      return { message: (error as Error).message, success: false }; 
+    }
+  }
+  
 }
 export const authService = new AuthService(
   userService,

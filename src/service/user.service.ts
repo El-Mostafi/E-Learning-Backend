@@ -38,6 +38,18 @@ export class UserService {
       return { success: false, message: error };
     }
   }
+  async findOneByUserName(userName: string) {
+    return await User.findOne({ userName });
+  }
+  
+  async updateUser(userId: string, updateData:{userName: string; profileImg: string}) {
+    return await User.findByIdAndUpdate(
+      userId,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    ).select('-password'); // Exclude password from the returned data
+  }
+  
 }
 
 export const userService = new UserService();
