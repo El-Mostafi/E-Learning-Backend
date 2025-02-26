@@ -4,7 +4,7 @@ import { userOTPVerificationService } from "../../service/userOTPVerification.se
 import { AuthDto } from "./dtos/auth.dto";
 import { AuthenticationService } from "../../../common";
 import UserOTPVerification from "../../models/userOTPVerification";
-import jwt from 'jsonwebtoken';
+import jwt from "jsonwebtoken";
 
 export class AuthService {
   constructor(
@@ -29,8 +29,10 @@ export class AuthService {
       signinDto.email,
       signinDto.userName
     );
-    if (!user) return { message: "wrong credentials" };
 
+    if (!user) return { message: "wrong credentials" };
+    if (user.emailConfirmed == false)
+      return { message: "Email is not confirmed" };
     const samePwd = await this.authenticationService.pwdCompare(
       user.password,
       signinDto.password
@@ -38,8 +40,7 @@ export class AuthService {
     // console.log(samePwd);
 
     if (!samePwd) return { message: "wrong credentials" };
-    if (user.emailConfirmed == false)
-      return { message: "Email is not confirmed" };
+
     const jwt = this.authenticationService.generateJwt(
       {
         email: user.email,
@@ -134,7 +135,7 @@ export class AuthService {
 </body>
 </html>
 `
-      .replace("{userName}", userName)
+      .replace("{userName}", userName.replace("|", " "))
       .replace("{otp}", otp);
 
     await emailSenderService.sendEmail(email, subject, htmlContent);
@@ -273,7 +274,7 @@ export class AuthService {
 </body>
 </html>
 `
-      .replace("{userName}", user.userName)
+      .replace("{userName}", user.userName.replace("|", " "))
       .replace("{otp}", otp);
 
     await emailSenderService.sendEmail(email, subject, htmlContent);
@@ -288,27 +289,31 @@ export class AuthService {
 
     return { success: true, message: result.message as string };
   }
-  async updateUser(userId: string, userName: string, profileImg: string): Promise<{ message: string, success?: boolean,jwt?:string }> {
+  async updateUser(
+    userId: string,
+    userName: string,
+    profileImg: string
+  ): Promise<{ message: string; success?: boolean; jwt?: string }> {
     try {
       const updateData: { userName: string; profileImg: string } = {
         userName: "",
         profileImg: "",
       };
-  
+
       if (userName) {
         const existingUsername = await userService.findOneByUserName(userName);
         if (existingUsername && existingUsername.id !== userId) {
-          return { message: 'Username is already taken', success: false };
+          return { message: "Username is already taken", success: false };
         }
         updateData.userName = userName;
       }
-  
+
       if (profileImg) updateData.profileImg = profileImg;
-  
+
       const updatedUser = await userService.updateUser(userId, updateData);
-      
+
       if (!updatedUser) {
-        return { message: 'User not found', success: false };
+        return { message: "User not found", success: false };
       }
       const jwt = this.authenticationService.generateJwt(
         {
@@ -321,14 +326,12 @@ export class AuthService {
         process.env.JWT_KEY!,
         false
       );
-  
-      return { message: 'User updated successfully', success: true, jwt: jwt };
-  
+
+      return { message: "User updated successfully", success: true, jwt: jwt };
     } catch (error) {
-      return { message: (error as Error).message, success: false }; 
+      return { message: (error as Error).message, success: false };
     }
   }
-  
 }
 export const authService = new AuthService(
   userService,
