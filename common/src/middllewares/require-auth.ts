@@ -6,7 +6,9 @@ export const requireAuth = async (
   res: Response,
   next: NextFunction
 ) => {
-  if (!req.currentUser || req.currentUser.emailConfirmed == false) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    // res.status(401).send({ message: "Unauthorized" });
     return next(new NotAutherizedError());
   }
   next();

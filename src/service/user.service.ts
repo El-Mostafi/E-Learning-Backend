@@ -1,15 +1,18 @@
+import mongoose from "mongoose";
 import User from "../models/user";
-import { AuthDto } from "../routers/auth/dtos/auth.dto";
+import {  CreateUserDto, updateData } from "../routers/auth/dtos/auth.dto";
 
 export class UserService {
   constructor() {}
 
-  async create(createUserDto: AuthDto) {
+  async create(createUserDto: CreateUserDto) {
     const user = await User.build({
       email: createUserDto.email,
       password: createUserDto.password,
       userName: createUserDto.userName,
       role: createUserDto.role,
+      ...(createUserDto.role === "student" && { educationLevel: createUserDto.educationLevel, fieldOfStudy: createUserDto.fieldOfStudy }),
+      ...(createUserDto.role === "instructor" && { expertise: createUserDto.expertise, yearsOfExperience: createUserDto.yearsOfExperience, biography: createUserDto.biography }),
     });
 
     return await user.save();
@@ -23,7 +26,7 @@ export class UserService {
   async findOneByEmail(email: string) {
     return await User.findOne({ email });
   }
-  async updatePassword(email: string, hashedPassword: string) {
+  async updatePassword(email: string, newPassword: string) {
     try {
       const user = await User.findOne({ email });
 
@@ -31,7 +34,7 @@ export class UserService {
         return { success: false, message: "User not found" };
       }
 
-      user.password = hashedPassword;
+      user.password = newPassword;
       await user.save();
 
       return { success: true, message: "Password updated successfully" };
@@ -39,6 +42,18 @@ export class UserService {
       return { success: false, message: error };
     }
   }
+  async findOneByUserName(userName: string) {
+    return await User.findOne({ userName });
+  }
+  
+  async updateUser(userId: mongoose.Types.ObjectId, updateData:updateData) {
+    return await User.findByIdAndUpdate(
+      userId,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    ).select('-password'); // Exclude password from the returned data
+  }
+  
 }
 
 export const userService = new UserService();

@@ -5,9 +5,9 @@ import { promisify } from 'util'
 const scryptAsync = promisify(scrypt);
 
 export class AuthenticationService {
-    generateJwt(payload: JwtPayload, JWT_KEY: string) {
-        return jwt.sign(payload, JWT_KEY, { expiresIn: '10h' });
-    }
+    generateJwt(payload: JwtPayload, JWT_KEY: string, RememberMe: boolean) {
+        return jwt.sign(payload, JWT_KEY, { expiresIn: RememberMe ? '7d' : '10h' });
+    }    
     async pwdToHash(password: string) {
         const salt = randomBytes(8).toString('hex');
         const buf = (await scryptAsync(password, salt, 64)) as Buffer

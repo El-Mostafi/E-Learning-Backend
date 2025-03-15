@@ -16,13 +16,15 @@ import { courseRouter } from "../src/routers/course/course.routers";
 import { sectionRouter } from "./routers/course/section.routers";
 import { lectureRouter } from "./routers/course/lecture.routers";
 import { enrollmentRouter } from "./routers/enrollment/enrollment.routers";
+import { cloudRouters } from "../src/routers/cloudinary/cloud.routers";
+import { stripeRouters } from "../src/routers/Stripe/stripe.routers";
 
 export class AppModule {
   constructor(public app: Application) {
     app.set("trust proxy", true);
     app.use(
       cors({
-        origin: "*",
+        origin: process.env.Frontend_URL,
         credentials: true,
         optionsSuccessStatus: 200,
       })
@@ -46,16 +48,17 @@ export class AppModule {
       await mongoose.connect(process.env.MONGO_URL);
       console.log("Connected to MongoDB");
     } catch (err: any) {
-      console.log(err);
+      throw new Error(err);
     }
-    this.app.use(currentUser);
+    // this.app.use(currentUser);
 
-    this.app.use(authRouters);
     this.app.use(courseRouter);
     this.app.use(sectionRouter);
     this.app.use(lectureRouter);
     this.app.use(enrollmentRouter)
-
+    this.app.use(authRouters);
+    this.app.use(cloudRouters);
+    this.app.use(stripeRouters);
     this.app.use(errorHandler);
 
     this.app.all("*", (req, res, next) => {

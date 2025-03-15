@@ -1,9 +1,11 @@
 import { UserService, userService } from "../../service/user.service";
 import { emailSenderService } from "../../service/EmailSender.service";
 import { userOTPVerificationService } from "../../service/userOTPVerification.service";
-import { AuthDto } from "./dtos/auth.dto";
+import { AuthDto, CreateUserDto, updateData } from './dtos/auth.dto';
 import { AuthenticationService } from "../../../common";
 import UserOTPVerification from "../../models/userOTPVerification";
+import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 
 export class AuthService {
   constructor(
@@ -11,27 +13,36 @@ export class AuthService {
     public authenticationService: AuthenticationService
   ) {}
 
-  async signup(createUserDto: AuthDto) {
+  async signup(createUserDto: CreateUserDto) {
     const existingUser = await this.userService.findOneByEmailOrUserName(
       createUserDto.email,
       createUserDto.userName
     );
-    if (existingUser) return { message: "email or user name is taken" };
 
-    const newUser = await this.userService.create(createUserDto);
+    if (existingUser) {
+      return { message: "Email or username is already taken" };
+    }
 
-    const jwt = this.authenticationService.generateJwt(
-      {
-        email: createUserDto.email,
-        userId: newUser.id,
-        userName: createUserDto.userName,
-        emailConfirmed: false,
-        role: createUserDto.role
-      },
-      process.env.JWT_KEY!
-    );
+    const userData = {
+      email: createUserDto.email,
+      password: createUserDto.password,
+      userName: createUserDto.userName,
+      role: createUserDto.role,
+      aboutMe: createUserDto.AboutMe,
+      RememberMe: false,
+      ...(createUserDto.role === "student" && {
+        educationLevel: createUserDto.educationLevel,
+        fieldOfStudy: createUserDto.fieldOfStudy,
+      }),
+      ...(createUserDto.role === "instructor" && {
+        expertise: createUserDto.expertise,
+        yearsOfExperience: createUserDto.yearsOfExperience,
+        biography: createUserDto.biography,
+      }),
+    };
 
-    return { jwt, newUser };
+    const newUser = await this.userService.create(userData);
+    return { newUser };
   }
 
   async signin(signinDto: AuthDto) {
@@ -39,30 +50,42 @@ export class AuthService {
       signinDto.email,
       signinDto.userName
     );
-    if (!user) return { message: "wrong credentials" };
 
-    const samePwd = this.authenticationService.pwdCompare(
+    if (!user) return { message: "wrong credentials" };
+    if (user.emailConfirmed == false)
+      return { message: "Email is not confirmed" };
+    const samePwd = await this.authenticationService.pwdCompare(
       user.password,
       signinDto.password
     );
+    // console.log(samePwd);
 
     if (!samePwd) return { message: "wrong credentials" };
-    if (user.emailConfirmed == false)
-      return { message: "Email is not confirmed" };
+
     const jwt = this.authenticationService.generateJwt(
       {
         email: user.email,
         userId: user.id,
         userName: user.userName,
         emailConfirmed: user.emailConfirmed,
-        role: user.role
+        profileImg: user.profileImg,
+        role: user.role,
+        expertise: user.expertise,
+        yearsOfExperience: user.yearsOfExperience,
+        biography: user.biography,
+        educationLevel: user.educationLevel,
+        fieldOfStudy: user.fieldOfStudy,
       },
-      process.env.JWT_KEY!
+      process.env.JWT_KEY!,
+      signinDto.RememberMe
     );
 
     return { jwt, user };
   }
-  async sendOtpVerificationEmail(email: string, userName: string) {
+  async sendOtpVerificationEmail(email: string) {
+    const user = await userService.findOneByEmail(email);
+    if (!user) return { message: "User not found" };
+    const userName = user.userName;
     const otp = userOTPVerificationService.generateOtp();
     const hashOtp = await this.authenticationService.pwdToHash(otp);
     await userOTPVerificationService.create(email, hashOtp);
@@ -128,7 +151,7 @@ export class AuthService {
 </head>
 <body>
     <div class='container'>
-        <div class='header'>Hello {userName},</div>
+        <div class='header'>Hello, {userName} ! &#128075</div>
         <div class='description'>Thank you for verifying your email address. Please use the OTP code below:</div>
         <div class='otp-code'>{otp}</div>
         <div class='description'>This code will expire in 30 minutes. If you didn’t request this code, please ignore this email.</div>
@@ -139,20 +162,20 @@ export class AuthService {
 </body>
 </html>
 `
-      .replace("{userName}", userName)
+      .replace("{userName}", userName.replace("|", " "))
       .replace("{otp}", otp);
 
     await emailSenderService.sendEmail(email, subject, htmlContent);
   }
 
-  async verifyEmail(email: string, otp: string) {
+  async verifyOtp(email: string, otp: string) {
     const userOTPVerification = await userOTPVerificationService.findOneByEmail(
       email
     );
     if (!userOTPVerification) {
       return {
         message:
-          "Account record not found or has been verified already. Please sign up or login",
+          "Account record not found for this email. Please sign up or login",
       };
     }
 
@@ -172,7 +195,7 @@ export class AuthService {
     // Delete the OTP record after successful verification
     await UserOTPVerification.deleteMany({ email });
 
-    return { success: "Email verified successfully" };
+    return { success: "OTP verified successfully" };
   }
   async verifyUser(email: string, userName: string) {
     const user = await this.userService.findOneByEmailOrUserName(
@@ -188,9 +211,16 @@ export class AuthService {
           userId: user.id,
           userName: user.userName,
           emailConfirmed: user.emailConfirmed,
-          role: user.role
+          profileImg: user.profileImg,
+          role: user.role,
+          expertise: user.expertise,
+          yearsOfExperience: user.yearsOfExperience,
+          biography: user.biography,
+          educationLevel: user.educationLevel,
+          fieldOfStudy: user.fieldOfStudy,
         },
-        process.env.JWT_KEY!
+        process.env.JWT_KEY!,
+        false
       );
       return { user, jwt };
     } else {
@@ -266,7 +296,7 @@ export class AuthService {
 </head>
 <body>
     <div class='container'>
-        <div class='header'>Hello {userName},</div>
+        <div class='header'>Hello, {userName} ! &#128075</div>
         <div class='description'>You recently requested to reset your password. Please use the OTP code below to proceed:</div>
         <div class='otp-code'>{otp}</div>
         <div class='description'>This OTP is valid for 30 minutes. If you did not request this change, please ignore this email.</div>
@@ -277,52 +307,66 @@ export class AuthService {
 </body>
 </html>
 `
-      .replace("{userName}", user.userName)
+      .replace("{userName}", user.userName.replace("|", " "))
       .replace("{otp}", otp);
 
     await emailSenderService.sendEmail(email, subject, htmlContent);
 
     return { success: "Email sent successfully" };
   }
-  async ResetPassword(email: string, otp: string, newPassword: string) {
-    {
-      const userOTPVerification =
-        await userOTPVerificationService.findOneByEmail(email);
-      if (!userOTPVerification) {
-        return {
-          success: false,
-          message: "Account record not found for this email.",
-        };
+  async ResetPassword(email: string, newPassword: string) {
+    const result = await userService.updatePassword(email, newPassword);
+
+    if (!result.success)
+      return { success: false, message: result.message as string };
+
+    return { success: true, message: result.message as string };
+  }
+  async updateUser(
+    userId: mongoose.Types.ObjectId,
+    updateData: updateData
+  ): Promise<{ message: string; success?: boolean; jwt?: string }> {
+    try {
+      // const updateData: { userName: string; profileImg: string } = {
+      //   userName: "",
+      //   profileImg: "",
+      // };
+
+      if (updateData.userName) {
+        const existingUsername = await userService.findOneByUserName(updateData.userName);
+        if (existingUsername && existingUsername.id !== userId) {
+          return { message: "Username is already taken", success: false };
+        }
       }
 
-      const isOtpValid = await this.authenticationService.pwdCompare(
-        userOTPVerification.otp,
-        otp
-      );
-      if (!isOtpValid)
-        return {
-          success: false,
-          message: "Invalid code passed. check your email",
-        };
+      if (!updateData.profileImg) updateData.profileImg = "";
 
-      if (userOTPVerification.expiresAt < new Date()) {
-        await UserOTPVerification.deleteMany({ email });
+      const updatedUser = await userService.updateUser(userId, updateData);
 
-        return { success: false, message: "OTP expired" };
+      if (!updatedUser) {
+        return { message: "User not found", success: false };
       }
-
-      // Update user password
-      const hashedPassword = await this.authenticationService.pwdToHash(
-        newPassword
+      const jwt = this.authenticationService.generateJwt(
+        {
+          email: updatedUser.email,
+          userId: updatedUser.id,
+          userName: updatedUser.userName,
+          emailConfirmed: updatedUser.emailConfirmed,
+          profileImg: updatedUser.profileImg,
+          role: updatedUser.role,
+          expertise: updatedUser.expertise,
+          yearsOfExperience: updatedUser.yearsOfExperience,
+          biography: updatedUser.biography,
+          educationLevel: updatedUser.educationLevel,
+          fieldOfStudy: updatedUser.fieldOfStudy,
+        },
+        process.env.JWT_KEY!,
+        false
       );
-      const result = await userService.updatePassword(email, hashedPassword);
 
-      if (!result.success)
-        return { success: false, message: result.message as string };
-      // Delete the OTP record after successful verification
-      await UserOTPVerification.deleteMany({ email });
-
-      return { success: true, message: result.message as string };
+      return { message: "User updated successfully", success: true, jwt: jwt };
+    } catch (error) {
+      return { message: (error as Error).message, success: false };
     }
   }
 }
