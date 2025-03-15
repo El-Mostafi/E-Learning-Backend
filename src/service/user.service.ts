@@ -1,14 +1,17 @@
 import User from "../models/user";
-import { AuthDto } from "../routers/auth/dtos/auth.dto";
+import {  CreateUserDto, updateData } from "../routers/auth/dtos/auth.dto";
 
 export class UserService {
   constructor() {}
 
-  async create(createUserDto: AuthDto) {
+  async create(createUserDto: CreateUserDto) {
     const user = await User.build({
       email: createUserDto.email,
       password: createUserDto.password,
       userName: createUserDto.userName,
+      role: createUserDto.role,
+      ...(createUserDto.role === "student" && { educationLevel: createUserDto.educationLevel, fieldOfStudy: createUserDto.fieldOfStudy }),
+      ...(createUserDto.role === "instructor" && { expertise: createUserDto.expertise, yearsOfExperience: createUserDto.yearsOfExperience, biography: createUserDto.biography }),
     });
 
     return await user.save();
@@ -42,7 +45,7 @@ export class UserService {
     return await User.findOne({ userName });
   }
   
-  async updateUser(userId: string, updateData:{userName: string; profileImg: string}) {
+  async updateUser(userId: string, updateData:updateData) {
     return await User.findByIdAndUpdate(
       userId,
       { $set: updateData },

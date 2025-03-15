@@ -1,7 +1,7 @@
 import { UserService, userService } from "../../service/user.service";
 import { emailSenderService } from "../../service/EmailSender.service";
 import { userOTPVerificationService } from "../../service/userOTPVerification.service";
-import { AuthDto } from "./dtos/auth.dto";
+import { AuthDto, CreateUserDto, updateData } from './dtos/auth.dto';
 import { AuthenticationService } from "../../../common";
 import UserOTPVerification from "../../models/userOTPVerification";
 import jwt from "jsonwebtoken";
@@ -12,15 +12,35 @@ export class AuthService {
     public authenticationService: AuthenticationService
   ) {}
 
-  async signup(createUserDto: AuthDto) {
+  async signup(createUserDto: CreateUserDto) {
     const existingUser = await this.userService.findOneByEmailOrUserName(
       createUserDto.email,
       createUserDto.userName
     );
-    if (existingUser) return { message: "email or user name is taken" };
 
-    const newUser = await this.userService.create(createUserDto);
+    if (existingUser) {
+      return { message: "Email or username is already taken" };
+    }
 
+    const userData = {
+      email: createUserDto.email,
+      password: createUserDto.password,
+      userName: createUserDto.userName,
+      role: createUserDto.role,
+      aboutMe: createUserDto.AboutMe,
+      RememberMe: false,
+      ...(createUserDto.role === "student" && {
+        educationLevel: createUserDto.educationLevel,
+        fieldOfStudy: createUserDto.fieldOfStudy,
+      }),
+      ...(createUserDto.role === "instructor" && {
+        expertise: createUserDto.expertise,
+        yearsOfExperience: createUserDto.yearsOfExperience,
+        biography: createUserDto.biography,
+      }),
+    };
+
+    const newUser = await this.userService.create(userData);
     return { newUser };
   }
 
@@ -48,6 +68,12 @@ export class AuthService {
         userName: user.userName,
         emailConfirmed: user.emailConfirmed,
         profileImg: user.profileImg,
+        role: user.role,
+        expertise: user.expertise,
+        yearsOfExperience: user.yearsOfExperience,
+        biography: user.biography,
+        educationLevel: user.educationLevel,
+        fieldOfStudy: user.fieldOfStudy,
       },
       process.env.JWT_KEY!,
       signinDto.RememberMe
@@ -185,6 +211,12 @@ export class AuthService {
           userName: user.userName,
           emailConfirmed: user.emailConfirmed,
           profileImg: user.profileImg,
+          role: user.role,
+          expertise: user.expertise,
+          yearsOfExperience: user.yearsOfExperience,
+          biography: user.biography,
+          educationLevel: user.educationLevel,
+          fieldOfStudy: user.fieldOfStudy,
         },
         process.env.JWT_KEY!,
         false
@@ -291,24 +323,22 @@ export class AuthService {
   }
   async updateUser(
     userId: string,
-    userName: string,
-    profileImg: string
+    updateData: updateData
   ): Promise<{ message: string; success?: boolean; jwt?: string }> {
     try {
-      const updateData: { userName: string; profileImg: string } = {
-        userName: "",
-        profileImg: "",
-      };
+      // const updateData: { userName: string; profileImg: string } = {
+      //   userName: "",
+      //   profileImg: "",
+      // };
 
-      if (userName) {
-        const existingUsername = await userService.findOneByUserName(userName);
+      if (updateData.userName) {
+        const existingUsername = await userService.findOneByUserName(updateData.userName);
         if (existingUsername && existingUsername.id !== userId) {
           return { message: "Username is already taken", success: false };
         }
-        updateData.userName = userName;
       }
 
-      if (profileImg) updateData.profileImg = profileImg;
+      if (!updateData.profileImg) updateData.profileImg = "";
 
       const updatedUser = await userService.updateUser(userId, updateData);
 
@@ -322,6 +352,12 @@ export class AuthService {
           userName: updatedUser.userName,
           emailConfirmed: updatedUser.emailConfirmed,
           profileImg: updatedUser.profileImg,
+          role: updatedUser.role,
+          expertise: updatedUser.expertise,
+          yearsOfExperience: updatedUser.yearsOfExperience,
+          biography: updatedUser.biography,
+          educationLevel: updatedUser.educationLevel,
+          fieldOfStudy: updatedUser.fieldOfStudy,
         },
         process.env.JWT_KEY!,
         false
