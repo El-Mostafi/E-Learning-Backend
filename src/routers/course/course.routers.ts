@@ -79,8 +79,8 @@ router.post(
       .withMessage("Please enter a valid category description"),
   ],
   ValidationRequest,
-  currentUser,
   requireAuth,
+  currentUser,
   roleIsInstructor,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -126,8 +126,8 @@ router.put(
       .withMessage("Please enter a valid category description"),
   ],
   ValidationRequest,
-  currentUser,
   requireAuth,
+  currentUser,
   roleIsInstructor,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -151,8 +151,8 @@ router.put(
 
 router.put(
   "/api/courses/:id/publish",
-  currentUser,
   requireAuth,
+  currentUser,
   roleIsInstructor,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -171,8 +171,8 @@ router.put(
 
 router.put(
   "/api/courses/:id/unpublish",
-  currentUser,
   requireAuth,
+  currentUser,
   roleIsInstructor,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -191,8 +191,8 @@ router.put(
 
 router.delete(
   "/api/courses/delete/:id",
-  currentUser,
   requireAuth,
+  currentUser,
   roleIsInstructor,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
