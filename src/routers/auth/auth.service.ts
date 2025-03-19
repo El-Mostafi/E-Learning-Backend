@@ -6,10 +6,6 @@ import { AuthenticationService } from "../../../common";
 import UserOTPVerification from "../../models/userOTPVerification";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
-<<<<<<< HEAD
-=======
-import mongoose from "mongoose";
->>>>>>> B--Hamza
 
 export class AuthService {
   constructor(
