@@ -2,14 +2,15 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { authenticationService } from "../services/authentication";
 import { NotAutherizedError } from "../errors/not-autherized-error";
+import mongoose from "mongoose";
 declare global {
   interface JwtPayload {
     email: string;
-    userId: string;
+    userId: mongoose.Types.ObjectId;
     userName: string;
     emailConfirmed: boolean;
     profileImg: string;
-    role: string;
+    role: "instructor" | "student" | "admin";
     expertise?: string;
     yearsOfExperience?: number;
     biography?: String;

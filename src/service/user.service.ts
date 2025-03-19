@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import User from "../models/user";
 import {  CreateUserDto, updateData } from "../routers/auth/dtos/auth.dto";
 
@@ -45,7 +46,7 @@ export class UserService {
     return await User.findOne({ userName });
   }
   
-  async updateUser(userId: string, updateData:updateData) {
+  async updateUser(userId: mongoose.Types.ObjectId, updateData:updateData) {
     return await User.findByIdAndUpdate(
       userId,
       { $set: updateData },
