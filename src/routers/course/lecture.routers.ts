@@ -65,8 +65,8 @@ router.post(
       .withMessage("Please enter a thumbnail URL"),
   ],
   ValidationRequest,
-  currentUser,
   requireAuth,
+  currentUser,
   roleIsInstructor,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -102,8 +102,8 @@ router.put(
       .withMessage("Please enter a thumbnail URL"),
   ],
   ValidationRequest,
-  currentUser,
   requireAuth,
+  currentUser,
   roleIsInstructor,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -131,8 +131,8 @@ router.put(
 
 router.delete(
   "/api/courses/:id/sections/:sectionId/lectures/:lectureId/delete-lecture",
-  currentUser,
   requireAuth,
+  currentUser,
   roleIsInstructor,
   async (req: Request, res: Response, next: NextFunction) => {
     try {

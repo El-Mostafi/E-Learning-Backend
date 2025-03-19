@@ -26,6 +26,7 @@ export interface UserDocument extends mongoose.Document {
   enrollments: mongoose.Types.ObjectId[];
   reviews: mongoose.Types.DocumentArray<Review>;
   certificates: mongoose.Types.DocumentArray<Certificate>;
+  cart: mongoose.Types.Array<mongoose.Types.ObjectId>;
 }
 
 export interface CreateUserDto {
@@ -137,7 +138,14 @@ const userSchema = new mongoose.Schema({
   // Fields related to reviews
   reviews: [reviewSchema],
   // Fields related to certificates
+
   certificates: [certificateSchema],
+  cart: {
+    type: [mongoose.Schema.Types.ObjectId],
+    ref: "Course",
+    default: () => [] // Initialize as empty array
+  },
+
 });
 
 // Password hashing middleware

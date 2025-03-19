@@ -60,8 +60,8 @@ router.post(
       .withMessage("Please enter a preview status"),
   ],
   ValidationRequest,
-  currentUser,
   requireAuth,
+  currentUser,
   roleIsInstructor,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -93,8 +93,8 @@ router.put(
       .withMessage("Please enter a preview status"),
   ],
   ValidationRequest,
-  currentUser,
   requireAuth,
+  currentUser,
   roleIsInstructor,
 
   async (req: Request, res: Response, next: NextFunction) => {
@@ -121,8 +121,8 @@ router.put(
 
 router.delete(
   "/api/courses/:id/sections/:sectionId/delete-section",
-  currentUser,
   requireAuth,
+  currentUser,
   roleIsInstructor,
   async (req: Request, res: Response, next: NextFunction) => {
     try {

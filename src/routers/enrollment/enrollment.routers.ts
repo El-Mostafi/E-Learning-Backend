@@ -9,8 +9,8 @@ const enrollmentService = new EnrollmentService();
 
 router.post(
   "/api/courses/:courseId/enroll",
-  currentUser,
   requireAuth,
+  currentUser,
   roleIsStudent,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -29,8 +29,8 @@ router.post(
 
 router.get(
   "/api/my-courses/enrolled",
-  currentUser,
   requireAuth,
+  currentUser,
   roleIsStudent,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -48,8 +48,8 @@ router.get(
 
 router.get(
   "/api/my-courses/enrolled/:courseId",
-  currentUser,
   requireAuth,
+  currentUser,
   roleIsStudent,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -68,8 +68,8 @@ router.get(
 
 router.put(
   "/api/my-courses/enrolled:courseId/update-progress",
-  currentUser,
   requireAuth,
+  currentUser,
   roleIsStudent,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -90,8 +90,8 @@ router.put(
 
 router.delete(
   "/api/my-courses/:courseId/enrollment/withdraw",
-  currentUser,
   requireAuth,
+  currentUser,
   roleIsStudent,
   async (req: Request, res: Response, next: NextFunction) => {
     try {

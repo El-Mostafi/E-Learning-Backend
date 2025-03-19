@@ -23,6 +23,7 @@ export class UserService {
       $or: [{ email: email }, { userName: userName }],
     });
   }
+  
   async findOneByEmail(email: string) {
     return await User.findOne({ email });
   }

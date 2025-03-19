@@ -15,8 +15,8 @@ const router = Router();
 const reviewService = new ReviewService();
 router.get(
   "/api/my-reviews",
-  currentUser,
   requireAuth,
+  currentUser,
   roleIsStudent,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -35,8 +35,8 @@ router.get(
 
 router.get(
   "/api/my-courses/:courseId/my-review",
-  currentUser,
   requireAuth,
+  currentUser,
   roleIsStudent,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -86,8 +86,8 @@ router.post(
       .withMessage("Text is required"),
   ],
   ValidationRequest,
-  currentUser,
   requireAuth,
+  currentUser,
   roleIsStudent,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -123,8 +123,8 @@ router.put(
       .withMessage("Text is required"),
   ],
   ValidationRequest,
-  currentUser,
   requireAuth,
+  currentUser,
   roleIsStudent,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -154,8 +154,8 @@ router.put(
 
 router.delete(
   "/api/my-reviews/:reviewId/remove-review",
-  currentUser,
   requireAuth,
+  currentUser,
   roleIsStudent,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
