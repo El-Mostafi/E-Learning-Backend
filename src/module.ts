@@ -9,7 +9,7 @@ import {
   requireAuth,
   currentUser,
   errorHandler,
-  NotFundError,
+  NotFoundError,
 } from "../common";
 import { authRouters } from "../src/routers/auth/auth.routers";
 import { courseRouter } from "../src/routers/course/course.routers";
@@ -18,6 +18,8 @@ import { lectureRouter } from "./routers/course/lecture.routers";
 import { enrollmentRouter } from "./routers/enrollment/enrollment.routers";
 import { cloudRouters } from "../src/routers/cloudinary/cloud.routers";
 import { stripeRouters } from "../src/routers/Stripe/stripe.routers";
+import {studentRouters} from '../src/routers/student/student.routers'
+import {instructorRouters} from '../src/routers/instructor/instructor.routers'
 
 export class AppModule {
   constructor(public app: Application) {
@@ -51,7 +53,8 @@ export class AppModule {
       throw new Error(err);
     }
     // this.app.use(currentUser);
-
+    
+    this.app.use(studentRouters);
     this.app.use(courseRouter);
     this.app.use(sectionRouter);
     this.app.use(lectureRouter);
@@ -59,11 +62,14 @@ export class AppModule {
     this.app.use(authRouters);
     this.app.use(cloudRouters);
     this.app.use(stripeRouters);
+    this.app.use(instructorRouters);
+    
+    this.app.all("*", (req, res, next) => {
+      next(new NotFoundError());
+    });
     this.app.use(errorHandler);
 
-    this.app.all("*", (req, res, next) => {
-      next(new NotFundError());
-    });
+    
 
     this.app.listen(3030, () => console.log("Server is running on port 3030"));
   }

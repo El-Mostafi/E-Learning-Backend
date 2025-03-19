@@ -12,7 +12,7 @@ import { updateData } from "./dtos/auth.dto";
 const router = Router();
 
 router.post(
-  "/signup",
+  "/api/signup",
   [
     body("email")
       .isEmail()
@@ -97,7 +97,7 @@ router.post(
 );
 
 router.post(
-  "/signin",
+  "/api/signin",
   [
     body("email")
       .not()
@@ -132,7 +132,7 @@ router.post(
       });
   }
 );
-router.post("/signout",requireAuth, (req: Request, res: Response, next: NextFunction) => {
+router.post("/api/signout",requireAuth, (req: Request, res: Response, next: NextFunction) => {
   try {
 
     req.session = null;
@@ -148,7 +148,7 @@ router.post("/signout",requireAuth, (req: Request, res: Response, next: NextFunc
   }
 });
 router.get(
-  "/current-user",
+  "/api/current-user",
   requireAuth,
   currentUser,
   (req: Request, res: Response, next: NextFunction) => {
@@ -157,7 +157,7 @@ router.get(
 );
 
 router.post(
-  "/verify-email",
+  "/api/verify-email",
   [body("email").isEmail().withMessage("Please enter a valid email")],
   ValidationRequest,
   async (req: Request, res: Response, next: NextFunction) => {
@@ -178,7 +178,7 @@ router.post(
   }
 );
 router.post(
-  "/resendEmail",
+  "/api/resendEmail",
   async (req: Request, res: Response, next: NextFunction) => {
     const { email, Source } = req.body;
 
@@ -203,7 +203,7 @@ router.post(
   }
 );
 router.post(
-  "/request-reset-password",
+  "/api/request-reset-password",
   [
     body("email")
       .isEmail()
@@ -225,7 +225,7 @@ router.post(
 );
 
 router.put(
-  "/reset-password",
+  "/api/reset-password",
   [
     body("email")
       .not()
@@ -250,7 +250,7 @@ router.put(
   }
 );
 router.post(
-  "/verify-Otp",
+  "/api/verify-Otp",
   [
     body("email")
       .not()
@@ -271,7 +271,7 @@ router.post(
   }
 );
 router.put(
-  "/update-user",
+  "/api/update-user",
   requireAuth,
   currentUser,
   [

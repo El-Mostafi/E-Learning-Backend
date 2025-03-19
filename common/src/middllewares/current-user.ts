@@ -2,7 +2,9 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { authenticationService } from "../services/authentication";
 import { NotAutherizedError } from "../errors/not-autherized-error";
+import { UserRole } from "../../../src/models/user";
 import mongoose from "mongoose";
+
 declare global {
   interface JwtPayload {
     email: string;
@@ -10,7 +12,7 @@ declare global {
     userName: string;
     emailConfirmed: boolean;
     profileImg: string;
-    role: "instructor" | "student" | "admin";
+    role: UserRole;
     expertise?: string;
     yearsOfExperience?: number;
     biography?: String;
