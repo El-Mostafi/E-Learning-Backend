@@ -5,6 +5,7 @@ import { AuthDto, CreateUserDto, updateData } from './dtos/auth.dto';
 import { AuthenticationService } from "../../../common";
 import UserOTPVerification from "../../models/userOTPVerification";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 
 export class AuthService {
   constructor(
@@ -322,7 +323,7 @@ export class AuthService {
     return { success: true, message: result.message as string };
   }
   async updateUser(
-    userId: string,
+    userId: mongoose.Types.ObjectId,
     updateData: updateData
   ): Promise<{ message: string; success?: boolean; jwt?: string }> {
     try {

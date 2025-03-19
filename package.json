@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "compile": "tsc && node ./dist/src/main.js",
-    "start": "nodemon -e ts --exec \"npm run compile\""
+    "start": "nodemon"
   },
   "keywords": [],
   "author": "",

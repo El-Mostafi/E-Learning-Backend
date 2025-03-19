@@ -12,6 +12,10 @@ import {
   NotFoundError,
 } from "../common";
 import { authRouters } from "../src/routers/auth/auth.routers";
+import { courseRouter } from "../src/routers/course/course.routers";
+import { sectionRouter } from "./routers/course/section.routers";
+import { lectureRouter } from "./routers/course/lecture.routers";
+import { enrollmentRouter } from "./routers/enrollment/enrollment.routers";
 import { cloudRouters } from "../src/routers/cloudinary/cloud.routers";
 import { stripeRouters } from "../src/routers/Stripe/stripe.routers";
 import {studentRouters} from '../src/routers/student/student.routers'
@@ -51,6 +55,10 @@ export class AppModule {
     // this.app.use(currentUser);
     
     this.app.use(studentRouters);
+    this.app.use(courseRouter);
+    this.app.use(sectionRouter);
+    this.app.use(lectureRouter);
+    this.app.use(enrollmentRouter)
     this.app.use(authRouters);
     this.app.use(cloudRouters);
     this.app.use(stripeRouters);
@@ -63,6 +71,6 @@ export class AppModule {
 
     
 
-    this.app.listen(8030, () => console.log("Server is running on port 8030"));
+    this.app.listen(3030, () => console.log("Server is running on port 3030"));
   }
 }
