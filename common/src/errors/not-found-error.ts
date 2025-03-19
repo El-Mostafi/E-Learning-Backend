@@ -1,5 +1,5 @@
 import {CustomError} from './custome-error';
-export class NotFundError extends CustomError{
+export class NotFoundError extends CustomError{
     statusCode = 404
     constructor() {
         super('Not Fund');

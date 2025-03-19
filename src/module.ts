@@ -9,11 +9,13 @@ import {
   requireAuth,
   currentUser,
   errorHandler,
-  NotFundError,
+  NotFoundError,
 } from "../common";
 import { authRouters } from "../src/routers/auth/auth.routers";
 import { cloudRouters } from "../src/routers/cloudinary/cloud.routers";
 import { stripeRouters } from "../src/routers/Stripe/stripe.routers";
+import {studentRouters} from '../src/routers/student/student.routers'
+import {instructorRouters} from '../src/routers/instructor/instructor.routers'
 
 export class AppModule {
   constructor(public app: Application) {
@@ -47,15 +49,19 @@ export class AppModule {
       throw new Error(err);
     }
     // this.app.use(currentUser);
-
+    
+    this.app.use(studentRouters);
     this.app.use(authRouters);
     this.app.use(cloudRouters);
     this.app.use(stripeRouters);
+    this.app.use(instructorRouters);
+    
+    this.app.all("*", (req, res, next) => {
+      next(new NotFoundError());
+    });
     this.app.use(errorHandler);
 
-    this.app.all("*", (req, res, next) => {
-      next(new NotFundError());
-    });
+    
 
     this.app.listen(8030, () => console.log("Server is running on port 8030"));
   }

@@ -1,3 +1,4 @@
+import { UserRole } from "../../../models/user";
 export interface AuthDto {
     email :string,
     password: string,
@@ -6,11 +7,9 @@ export interface AuthDto {
     AboutMe?: string
 }
 export interface CreateUserDto extends AuthDto {
-    role: "student" | "instructor";
-    // Student-specific fields
+    role: UserRole;
     educationLevel?: string;
     fieldOfStudy?: string;
-    // Instructor-specific fields
     expertise?: string;
     yearsOfExperience?: number;
     biography?: string;
