@@ -20,6 +20,7 @@ import { cloudRouters } from "../src/routers/cloudinary/cloud.routers";
 import { stripeRouters } from "../src/routers/Stripe/stripe.routers";
 import {studentRouters} from '../src/routers/student/student.routers'
 import {instructorRouters} from '../src/routers/instructor/instructor.routers'
+import "./service/course/cleanup.service";
 
 export class AppModule {
   constructor(public app: Application) {
@@ -71,6 +72,6 @@ export class AppModule {
 
     
 
-    this.app.listen(8030, () => console.log("Server is running on port 8030"));
+    this.app.listen(8031, () => console.log("Server is running on port 8031"));
   }
 }
