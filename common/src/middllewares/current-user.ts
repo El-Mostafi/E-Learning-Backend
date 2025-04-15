@@ -45,7 +45,6 @@ export const currentUser = (
     req.currentUser = payload;
     next();
   } catch (err) {
-    res.status(401).send({ message: "Invalid token" });
-    return;
+    return next(new NotAutherizedError());
   }
 };
