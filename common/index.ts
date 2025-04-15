@@ -4,6 +4,8 @@ export * from './src/middllewares/current-user';
 export * from './src/middllewares/require-auth';
 export * from './src/middllewares/error-handler';
 export * from './src/middllewares/validation-request';
+export * from './src/middllewares/update-file-tags';
+
 
 export * from './src/errors/bad-request-error';
 export * from './src/errors/not-autherized-error';
