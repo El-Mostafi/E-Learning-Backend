@@ -1,39 +1,49 @@
 import mongoose from "mongoose";
 
 export interface LectureDto {
-    title: string;
-    duration: number;
-    videoUrl: string;
-    thumbnailUrl: string;
+  title: string;
+  duration: number;
+  videoUrl: string;
+  description: string;
+  publicId: string;
+  isPreview: boolean;
 }
 
 export interface SectionDto {
-    title: string;
-    orderIndex: number;
-    isPreview: boolean;
-    lectures: LectureDto[];
+  title: string;
+  description: string;
+  orderIndex: number;
+  isPreview: boolean;
+  lectures?: LectureDto[];
 }
 
 export interface ExamDto {
-    question: string;
-    options: string[];
-    correctAnswerIndex: number;
+  question: string;
+  options: string[];
+  correctAnswerIndex: string;
 }
 
 export interface CategoryDto {
-    name: string;
-    description: string;
+  name: string;
 }
 
-export interface CourseDto {
-    title: string;
-    description: string;
-    coverImg: string;
-    level: string;
-    language: string;
+
+export interface CoursDtoParent {
+  title: string;
+  description: string;
+  thumbnailPreview: string;
+  level: string;
+  language: string;
+  pricing: {
     price: number;
-    oldPrice: number;
-    category: CategoryDto;
-    isPublished?: boolean;
+    isFree: boolean;
+  };
+  oldPrice: number;
+  category: CategoryDto;
+  isPublished?: boolean;
 }
+export interface CourseDto extends CoursDtoParent {
+  quizQuestions: ExamDto[];
+}
+
 

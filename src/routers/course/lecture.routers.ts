@@ -59,10 +59,15 @@ router.post(
     body("title").not().isEmpty().withMessage("Please enter a title"),
     body("duration").not().isEmpty().withMessage("Please enter a duration"),
     body("videoUrl").not().isEmpty().withMessage("Please enter a video URL"),
-    body("thumbnailUrl")
+    body("description")
       .not()
       .isEmpty()
-      .withMessage("Please enter a thumbnail URL"),
+      .withMessage("Please enter a description"),
+    body("publicId").not().isEmpty().withMessage("Please enter a publicId"),
+    body("isPreview")
+      .not()
+      .isEmpty()
+      .withMessage("Please enter a preview status"),
   ],
   ValidationRequest,
   requireAuth,
@@ -83,7 +88,10 @@ router.post(
       if (!result.success) {
         return next(new BadRequestError(result.message));
       }
-      res.send(result.message);
+      res.status(201).send({
+        message: result.message,
+        success: result.success,
+      });
     } catch (error) {
       next(error);
     }
