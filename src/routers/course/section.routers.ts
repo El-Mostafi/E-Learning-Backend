@@ -54,6 +54,10 @@ router.post(
       .not()
       .isEmpty()
       .withMessage("Please enter an order index"),
+    body("description")
+      .not()
+      .isEmpty()
+      .withMessage("Please enter a description"),
     body("isPreview")
       .not()
       .isEmpty()
@@ -67,12 +71,18 @@ router.post(
     try {
       const userId = req.currentUser!.userId;
       const courseId = req.params.id;
-      const sectionDto = req.body;
+      const sectionDto = req.body as SectionDto;
       const result = await sectionService.create(userId, courseId, sectionDto);
       if (!result.success) {
         return next(new BadRequestError(result.message));
       }
-      res.send(result.message);
+      res
+        .status(201)
+        .send({
+          message: result.message,
+          success: result.success,
+          sectionId: result.sectionId,
+        });
     } catch (error) {
       next(error);
     }
@@ -112,6 +122,7 @@ router.put(
       if (!result.success) {
         return next(new BadRequestError(result.message));
       }
+      
       res.send(result.message);
     } catch (error) {
       next(error);

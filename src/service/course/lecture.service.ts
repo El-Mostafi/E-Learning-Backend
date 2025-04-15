@@ -29,7 +29,9 @@ export class LectureService {
       title: lectureDto.title,
       duration: lectureDto.duration,
       videoUrl: lectureDto.videoUrl,
-      thumbnailUrl: lectureDto.thumbnailUrl,
+      description: lectureDto.description,
+      publicId: lectureDto.publicId,
+      isPreview: lectureDto.isPreview,
     };
 
     section.lectures.push(newLecture);
@@ -95,7 +97,7 @@ export class LectureService {
     lecture.title = lectureDto.title;
     lecture.duration = lectureDto.duration;
     lecture.videoUrl = lectureDto.videoUrl;
-    lecture.thumbnailUrl = lectureDto.thumbnailUrl;
+    lecture.description = lectureDto.description;
 
     await course.save();
     return { success: true, message: "Lecture updated successfully" };

@@ -2,15 +2,22 @@ import mongoose from "mongoose";
 import Course from "../../models/course";
 import { CourseDto } from "../../routers/course/dtos/course.dto";
 import courseData from "../../../Helpers/course/course.data";
+import { Types } from "mongoose";
 
 export class CourseService {
   constructor() {}
 
   async create(courseDto: CourseDto, instructorId: mongoose.Types.ObjectId) {
-    const course = Course.build(courseDto);
+    const { quizQuestions, ...courseData } = courseDto;
+    const course = Course.build(courseData);
     course.instructor = instructorId;
+    course.quizQuestions = new Types.DocumentArray(quizQuestions);
     await course.save();
-    return { success: true, message: "Course created successfully!" };
+    return {
+      success: true,
+      message: "Course created successfully!",
+      courseId: course.id,
+    };
   }
 
   async findAll() {
@@ -40,7 +47,7 @@ export class CourseService {
       return { success: false, message: "Course not Found" };
     }
 
-    return { success: true, course: this.transformCourse(course) };
+    return { success: true, course: course };
   }
 
   async findPublishedCourses() {

@@ -22,13 +22,14 @@ export class SectionService {
     const newSection = {
       title: sectionDto.title,
       orderIndex: sectionDto.orderIndex,
+      description: sectionDto.description,
       isPreview: sectionDto.isPreview,
       lectures: [],
     };
 
     course.sections.push(newSection);
     await course.save();
-    return { success: true, message: "Section created successfully" };
+    return { success: true, message: "Section created successfully", sectionId: course.sections[course.sections.length - 1].id };
   }
 
   async findAll(courseId: string) {
