@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import reviewSchema, { Review } from "./schemas/review";
 import certificateSchema, { Certificate } from "./schemas/certificate";
 import categorySchema, { Category } from "./schemas/category";
-import { CourseDto } from "../routers/course/dtos/course.dto";
+import { CoursDtoParent } from "../routers/course/dtos/course.dto";
 
 export enum Level {
   Beginner = "Beginner",
@@ -21,26 +21,48 @@ export enum Language {
 
 interface Lecture extends mongoose.Document {
   title: string;
+  description: string;
   duration: number;
   videoUrl: string;
-  thumbnailUrl: string;
+  publicId: string;
+  isPreview: boolean;
 }
 
 interface Section extends mongoose.Document {
   title: string;
+  description: string;
   orderIndex: number;
   isPreview: boolean;
   lectures: mongoose.Types.DocumentArray<Lecture>;
 }
 
-interface Exam extends mongoose.Document {
+// interface Exam extends mongoose.Document {
+//   question: string;
+//   options: {
+//     A: string;
+//     B: string;
+//     C: string;
+//     D: string;
+//   };
+//   correctAnswer: "A" | "B" | "C" | "D";
+// }
+interface Exam extends mongoose.Types.Subdocument {
   question: string;
-  options: string[];
-  correctAnswerIndex: number;
+  options: {
+    A: string;
+    B: string;
+    C: string;
+    D: string;
+  };
+  correctAnswer: "A" | "B" | "C" | "D";
 }
 
 const lectureSchema = new mongoose.Schema<Lecture>({
   title: {
+    type: String,
+    required: true,
+  },
+  description: {
     type: String,
     required: true,
   },
@@ -52,14 +74,22 @@ const lectureSchema = new mongoose.Schema<Lecture>({
     type: String,
     required: true,
   },
-  thumbnailUrl: {
+  publicId: {
     type: String,
+    required: true,
+  },
+  isPreview: {
+    type: Boolean,
     required: true,
   },
 });
 
 const SectionSchema = new mongoose.Schema<Section>({
   title: {
+    type: String,
+    required: true,
+  },
+  description: {
     type: String,
     required: true,
   },
@@ -74,17 +104,20 @@ const SectionSchema = new mongoose.Schema<Section>({
   lectures: [lectureSchema],
 });
 
-const examSchema = new mongoose.Schema<Exam>({
+const examSchema = new mongoose.Schema({
   question: {
     type: String,
     required: true,
   },
   options: {
-    type: [String],
-    required: true,
+    A: { type: String, required: true },
+    B: { type: String, required: true },
+    C: { type: String, required: true },
+    D: { type: String, required: true },
   },
-  correctAnswerIndex: {
-    type: Number,
+  correctAnswer: {
+    type: String,
+    enum: ["A", "B", "C", "D"],
     required: true,
   },
 });
@@ -92,23 +125,26 @@ const examSchema = new mongoose.Schema<Exam>({
 interface CourseDocument extends mongoose.Document {
   title: string;
   description: string;
-  coverImg: string;
+  thumbnailPreview: string;
   level: string;
   language: string;
-  price: number;
+  pricing: {
+    price: number;
+    isFree: boolean;
+  };
   oldPrice?: number;
   category: Category;
   reviews: mongoose.Types.DocumentArray<Review>;
   sections: mongoose.Types.DocumentArray<Section>;
   certificates: mongoose.Types.DocumentArray<Certificate>;
-  exam: Exam;
+  quizQuestions: mongoose.Types.DocumentArray<Exam>;
   instructor: mongoose.Types.ObjectId;
   students: mongoose.Types.ObjectId[];
   isPublished: boolean;
 }
 
 interface CourseModel extends mongoose.Model<CourseDocument> {
-  build(courseDto: CourseDto): CourseDocument;
+  build(courseDto: CoursDtoParent): CourseDocument;
 }
 
 const courseSchema = new mongoose.Schema<CourseDocument>(
@@ -122,7 +158,7 @@ const courseSchema = new mongoose.Schema<CourseDocument>(
       required: true,
     },
 
-    coverImg: {
+    thumbnailPreview: {
       type: String,
       required: true,
     },
@@ -130,7 +166,7 @@ const courseSchema = new mongoose.Schema<CourseDocument>(
     level: {
       type: String,
       enum: Object.values(Level),
-      required: false,
+      required: true,
     },
 
     language: {
@@ -139,9 +175,15 @@ const courseSchema = new mongoose.Schema<CourseDocument>(
       required: true,
     },
 
-    price: {
-      type: Number,
-      required: true,
+    pricing: {
+      price: {
+        type: Number,
+        required: true,
+      },
+      isFree: {
+        type: Boolean,
+        required: true,
+      },
     },
 
     oldPrice: {
@@ -155,7 +197,10 @@ const courseSchema = new mongoose.Schema<CourseDocument>(
     sections: [SectionSchema],
     certificates: [certificateSchema],
 
-    exam: examSchema,
+    quizQuestions: {
+      type: [examSchema],
+      default: [],
+    },
 
     instructor: {
       type: mongoose.Schema.Types.ObjectId,
@@ -178,7 +223,7 @@ const courseSchema = new mongoose.Schema<CourseDocument>(
   { timestamps: true }
 );
 
-courseSchema.statics.build = (courseDto: CourseDto) => {
+courseSchema.statics.build = (courseDto: CoursDtoParent) => {
   return new Course(courseDto);
 };
 
