@@ -5,6 +5,7 @@ import {
   BadRequestError,
   ValidationRequest,
   requireAuth,
+  deleteImageInCloud,
 } from "../../../common";
 import { body } from "express-validator";
 import UserOTPVerification from "../../models/userOTPVerification";
@@ -318,10 +319,13 @@ router.put(
       .isLength({ min: 50, max: 500 })
       .withMessage("Biography must be between 50-500 characters")
   ],
-
   ValidationRequest,
+  deleteImageInCloud,
   async (req: Request, res: Response, next: NextFunction) => {
     const updateData: updateData = req.body;
+    if(updateData.profileImg && !updateData.publicId ){
+      return next(new BadRequestError("Profile image public id is required")); 
+    }
     const userId = req.currentUser!.userId;
     const userRole = req.currentUser!.role;
      if (userRole === 'student') {
@@ -342,30 +346,7 @@ router.put(
       }
     }
 
-    // Split username if provided
-    // let updateData: updateData = { profileImg, };
-    // if (updateData.userName) {
-    //   const [firstName, lastName] = userName.split('|');
-    //   updateData = { 
-    //     ...updateData,
-    //     userName,
-    //     firstName,
-    //     lastName
-    //   };
-    // }
-
-    // Add role-specific data
-    // switch(userRole) {
-    //   case 'student':
-    //     updateData.educationLevel = educationLevel;
-    //     updateData.fieldOfStudy = fieldOfStudy;
-    //     break;
-    //   case 'instructor':
-    //     updateData.expertise = expertise;
-    //     updateData.yearsOfExperience = yearsOfExperience;
-    //     updateData.biography = biography;
-    //     break;
-    // }
+    
 
     const result = await authService.updateUser(userId, updateData);
     // const result = await authService.updateUser(userId, userName, profileImg);

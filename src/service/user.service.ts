@@ -52,7 +52,7 @@ export class UserService {
       userId,
       { $set: updateData },
       { new: true, runValidators: true }
-    ).select('-password'); // Exclude password from the returned data
+    ).select('-password'); 
   }
   
 }

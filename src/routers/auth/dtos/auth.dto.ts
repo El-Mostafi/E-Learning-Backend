@@ -17,6 +17,7 @@ export interface CreateUserDto extends AuthDto {
 export interface updateData{
     userName?: string;
     profileImg?: string;
+    publicId?:string;
     educationLevel?: string;
     fieldOfStudy?: string;
     expertise?: string;
