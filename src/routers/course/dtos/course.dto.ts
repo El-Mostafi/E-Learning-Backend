@@ -32,6 +32,7 @@ export interface CoursDtoParent {
   title: string;
   description: string;
   thumbnailPreview: string;
+  imgPublicId: string;
   level: string;
   language: string;
   pricing: {

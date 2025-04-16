@@ -8,6 +8,7 @@ import {
   requireAuth,
   ValidationRequest,
   updateFileTags,
+  deleteVideosImageInCourse
 } from "../../../common";
 import { roleIsInstructor } from "../../../common/src/middllewares/validate-roles";
 
@@ -20,7 +21,7 @@ router.get("/api/courses", async (req, res, next) => {
     if (!result.success) {
       return next(new BadRequestError(result.message!));
     }
-    res.send(result.courses!);
+    res.status(200).send(result.courses!);
   } catch (error) {
     next(error);
   }
@@ -47,7 +48,26 @@ router.get("/api/courses/category/:categoryId", async (req, res, next) => {
     next(error);
   }
 });
+router.get(
+  "/api/courses/instructor/my-courses",
+  requireAuth,
+  currentUser,
+  roleIsInstructor,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const instructorId = req.currentUser!.userId;
+      const result = await courseService.findAllByInstructorId(instructorId);
 
+      if (!result.success) {
+        return next(new BadRequestError(result.message!));
+      }
+
+      res.status(200).send(result.courses!);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 router.post(
   "/api/courses/create-course",
   [
@@ -60,12 +80,11 @@ router.post(
       .not()
       .isEmpty()
       .withMessage("Please enter a cover image URL"),
+    body("imgPublicId").not().isEmpty().withMessage("Please enter a publicId"),
     body("level").not().isEmpty().withMessage("Please enter a level"),
     body("language").not().isEmpty().withMessage("Please enter a language"),
     body("pricing.price").isNumeric().withMessage("Please enter a valid price"),
-    body("pricing.isFree")
-      .isBoolean()
-      .withMessage("isFree must be a boolean"),
+    body("pricing.isFree").isBoolean().withMessage("isFree must be a boolean"),
     body("oldPrice")
       .optional()
       .isNumeric()
@@ -237,6 +256,7 @@ router.delete(
   requireAuth,
   currentUser,
   roleIsInstructor,
+  deleteVideosImageInCourse,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.currentUser!.userId;
@@ -245,7 +265,7 @@ router.delete(
       if (!result.success) {
         return next(new BadRequestError(result.message));
       }
-      res.send(result.message);
+      res.status(200).send(result.message);
     } catch (error) {
       next(error);
     }

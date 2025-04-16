@@ -20,5 +20,23 @@ interface courseData {
   instructorName: string;
   instructorImg: string;
 }
+export interface courseInstructor {
+  id: string;
+  title: string;
+  thumbnailPreview: string;
+  category: string;
+  level: string;
+  reviews: number;
+  students: number;
+  instructorName: string;
+  instructorImg: string;
+  createdAt: Date;
+}
+export interface courseDataGenerale extends courseInstructor {
+  description: string;
+  price: number;
+  duration: number;
+  InstructorId: string;
+}
 
 export default courseData;

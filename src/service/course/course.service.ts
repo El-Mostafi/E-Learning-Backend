@@ -1,7 +1,10 @@
 import mongoose from "mongoose";
-import Course from "../../models/course";
+import Course, { CourseDocument, Section, Lecture } from "../../models/course";
 import { CourseDto } from "../../routers/course/dtos/course.dto";
-import courseData from "../../../Helpers/course/course.data";
+import courseData, {
+  courseDataGenerale,
+  courseInstructor,
+} from "../../../Helpers/course/course.data";
 import { Types } from "mongoose";
 
 export class CourseService {
@@ -53,13 +56,13 @@ export class CourseService {
   async findPublishedCourses() {
     const courses = await Course.find({ isPublished: true }).populate(
       "instructor",
-      ["userName", "profileImg", "AboutMe", "speciality"]
+      ["id","userName", "profileImg", "AboutMe", "speciality"]
     );
     if (!courses) {
       return { success: false, message: "No published courses found" };
     }
 
-    return { success: true, courses: courses.map(this.transformCourse) };
+    return { success: true, courses: courses.map(course => this.transformCourseGenerale(course)) };
   }
 
   async findAllByInstructorId(instructorId: mongoose.Types.ObjectId) {
@@ -70,7 +73,10 @@ export class CourseService {
     if (!courses) {
       return { success: false, message: "No courses found" };
     }
-    return { success: true, courses: courses.map(this.transformCourse) };
+    return {
+      success: true,
+      courses: courses.map(course => this.transformInstructor(course)),
+    };
   }
 
   async findAllByCategoryId(categoryId: string) {
@@ -192,6 +198,59 @@ export class CourseService {
       students: course.students.length,
       instructorName: course.instructor.userName,
       instructorImg: course.instructor.profileImg,
+    };
+  }
+
+  private transformInstructor(course: CourseDocument): courseInstructor {
+    const totalRating = course.reviews.reduce(
+      (sum, review) => sum + review.rating,
+      0
+    );
+    const averageRating = course.reviews.length
+      ? totalRating / course.reviews.length
+      : 0;
+    return {
+      id: (course._id as mongoose.Types.ObjectId).toString(),
+      title: course.title,
+      thumbnailPreview: course.thumbnailPreview,
+      category: course.category.name,
+      level: course.level,
+      reviews: averageRating,
+      students: course.students.length,
+      instructorName:(course.instructor as any).userName,
+      instructorImg:(course.instructor as any).profileImg,
+      createdAt: course.createdAt,
+    };
+  }
+
+  private transformCourseGenerale(course: CourseDocument): courseDataGenerale {
+    const totalRating = course.reviews.reduce(
+      (sum, review) => sum + review.rating,
+      0
+    );
+    const averageRating = course.reviews.length
+      ? totalRating / course.reviews.length
+      : 0;
+    const totaleDuration = course.sections.reduce((total: number, section: Section) => {
+      return total + section.lectures.reduce((sectionTotal: number, lecture: Lecture) => {
+        return sectionTotal + lecture.duration;
+      }, 0);
+    }, 0);
+    return {
+      id: (course._id as mongoose.Types.ObjectId).toString(),
+      title: course.title,
+      description: course.description,
+      thumbnailPreview: course.thumbnailPreview,
+      category: course.category.name,
+      level: course.level,
+      price: course.pricing.price,
+      reviews: averageRating,
+      duration: totaleDuration,
+      students: course.students.length,
+      instructorName:(course.instructor as any).userName,
+      instructorImg:(course.instructor as any).profileImg,
+      InstructorId:(course.instructor as any).id,
+      createdAt: course.createdAt,
     };
   }
 }
