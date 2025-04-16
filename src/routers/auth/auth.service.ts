@@ -340,6 +340,8 @@ export class AuthService {
       }
 
       if (!updateData.profileImg) updateData.profileImg = "";
+      if (!updateData.publicId) updateData.publicId = "";
+
 
       const updatedUser = await userService.updateUser(userId, updateData);
 

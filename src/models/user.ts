@@ -13,6 +13,7 @@ export interface UserDocument extends mongoose.Document {
   emailConfirmed: boolean;
   profileImg: string;
   coverImg: string;
+  publicId: string;
   createdAt: Date;
   aboutMe?: string;
   // Student-specific fields
@@ -81,6 +82,10 @@ const userSchema = new mongoose.Schema({
     default: null,
   },
   coverImg: {
+    type: String,
+    default: null,
+  },
+  publicId: {
     type: String,
     default: null,
   },
