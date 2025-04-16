@@ -9,7 +9,6 @@ export const updateFileTags = async (
 ) => {
   try {
     const publicIds = req.body;
-    console.log("Request body:", publicIds);
 
     if (!Array.isArray(publicIds) || publicIds.length === 0) {
       return next(

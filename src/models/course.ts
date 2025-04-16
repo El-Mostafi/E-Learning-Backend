@@ -19,7 +19,7 @@ export enum Language {
   Italian = "Italian",
 }
 
-interface Lecture extends mongoose.Document {
+export interface Lecture extends mongoose.Document {
   title: string;
   description: string;
   duration: number;
@@ -28,7 +28,7 @@ interface Lecture extends mongoose.Document {
   isPreview: boolean;
 }
 
-interface Section extends mongoose.Document {
+export interface Section extends mongoose.Document {
   title: string;
   description: string;
   orderIndex: number;
@@ -122,10 +122,11 @@ const examSchema = new mongoose.Schema({
   },
 });
 
-interface CourseDocument extends mongoose.Document {
+export interface CourseDocument extends mongoose.Document {
   title: string;
   description: string;
   thumbnailPreview: string;
+  imgPublicId: string;
   level: string;
   language: string;
   pricing: {
@@ -141,6 +142,7 @@ interface CourseDocument extends mongoose.Document {
   instructor: mongoose.Types.ObjectId;
   students: mongoose.Types.ObjectId[];
   isPublished: boolean;
+  createdAt: Date;
 }
 
 interface CourseModel extends mongoose.Model<CourseDocument> {
@@ -159,6 +161,11 @@ const courseSchema = new mongoose.Schema<CourseDocument>(
     },
 
     thumbnailPreview: {
+      type: String,
+      required: true,
+    },
+
+    imgPublicId: {
       type: String,
       required: true,
     },
@@ -217,6 +224,11 @@ const courseSchema = new mongoose.Schema<CourseDocument>(
     isPublished: {
       type: Boolean,
       default: false,
+    },
+
+    createdAt: {
+      type: Date,
+      default: Date.now,
     },
   },
 
