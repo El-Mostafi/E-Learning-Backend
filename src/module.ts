@@ -15,6 +15,7 @@ import { authRouters } from "../src/routers/auth/auth.routers";
 import { courseRouter } from "../src/routers/course/course.routers";
 import { sectionRouter } from "./routers/course/section.routers";
 import { lectureRouter } from "./routers/course/lecture.routers";
+import { examRouter } from "./routers/course/exam.routers";
 import { enrollmentRouter } from "./routers/enrollment/enrollment.routers";
 import { cloudRouters } from "../src/routers/cloudinary/cloud.routers";
 import { stripeRouters } from "../src/routers/Stripe/stripe.routers";
@@ -59,6 +60,7 @@ export class AppModule {
     this.app.use(courseRouter);
     this.app.use(sectionRouter);
     this.app.use(lectureRouter);
+    this.app.use(examRouter);
     this.app.use(enrollmentRouter)
     this.app.use(authRouters);
     this.app.use(cloudRouters);

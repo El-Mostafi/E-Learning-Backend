@@ -19,16 +19,26 @@ export interface SectionDto {
 
 export interface ExamDto {
   question: string;
-  options: string[];
-  correctAnswerIndex: string;
+  options: {
+    A: string;
+    B: string;
+    C: string;
+    D: string;
+  };
+  correctAnswer: "A" | "B" | "C" | "D";
 }
 
 export interface CategoryDto {
   name: string;
 }
+export interface Coupons {
+  code: string;
+  discountPercentage: number;
+  maxUses: number;
+  expiryDate: Date;
+}
 
-
-export interface CoursDtoParent {
+export interface CourseDto {
   title: string;
   description: string;
   thumbnailPreview: string;
@@ -43,8 +53,6 @@ export interface CoursDtoParent {
   category: CategoryDto;
   isPublished?: boolean;
 }
-export interface CourseDto extends CoursDtoParent {
-  quizQuestions: ExamDto[];
+export interface CourseDtoWithCoupons extends CourseDto {
+  coupons: Coupons[];
 }
-
-

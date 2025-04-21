@@ -49,7 +49,7 @@ export interface UserModel extends mongoose.Model<UserDocument> {
   build(createUserDto: CreateUserDto): UserDocument;
 }
 
-const userSchema = new mongoose.Schema({
+const userSchema = new mongoose.Schema<UserDocument>({
   email: {
     type: String,
     required: true,
@@ -79,7 +79,8 @@ const userSchema = new mongoose.Schema({
   },
   profileImg: {
     type: String,
-    default: null,
+    default:
+      "https://res.cloudinary.com/dkqkxtwuf/image/upload/v1740161005/defaultAvatar_iotzd9.avif",
   },
   coverImg: {
     type: String,
@@ -148,12 +149,11 @@ const userSchema = new mongoose.Schema({
   cart: {
     type: [mongoose.Schema.Types.ObjectId],
     ref: "Course",
-    default: () => [] // Initialize as empty array
+    default: () => [], 
   },
-
 });
 
-// Password hashing middleware
+
 userSchema.pre("save", async function (next) {
   const authenticationService = new AuthenticationService();
 
@@ -164,7 +164,6 @@ userSchema.pre("save", async function (next) {
     this.set("password", hashedPassword);
   }
 
-  // Role-specific validation
   if (this.role === "student") {
     if (!this.educationLevel || !this.fieldOfStudy) {
       return next(

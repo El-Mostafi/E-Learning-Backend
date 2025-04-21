@@ -1,6 +1,6 @@
 import { NextFunction, Router, Request, Response } from "express";
 import { body } from "express-validator";
-import { CourseDto } from "./dtos/course.dto";
+import { CourseDto, CourseDtoWithCoupons } from "./dtos/course.dto";
 import { CourseService } from "../../service/course/course.service";
 import {
   BadRequestError,
@@ -8,46 +8,55 @@ import {
   requireAuth,
   ValidationRequest,
   updateFileTags,
-  deleteVideosImageInCourse
+  deleteVideosImageInCourse,
 } from "../../../common";
 import { roleIsInstructor } from "../../../common/src/middllewares/validate-roles";
 
 const router = Router();
 const courseService = new CourseService();
 
-router.get("/api/courses", async (req, res, next) => {
-  try {
-    const result = await courseService.findPublishedCourses();
-    if (!result.success) {
-      return next(new BadRequestError(result.message!));
+router.get(
+  "/api/courses",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = await courseService.findPublishedCourses();
+      if (!result.success) {
+        return next(new BadRequestError(result.message!));
+      }
+      res.status(200).send(result.courses!);
+    } catch (error) {
+      next(error);
     }
-    res.status(200).send(result.courses!);
-  } catch (error) {
-    next(error);
   }
-});
+);
 
-router.get("/api/courses/:id", async (req, res, next) => {
-  try {
-    const id = req.params.id;
-    const result = await courseService.findOneById(id);
-    if (!result.success) {
-      return next(new BadRequestError(result.message!));
+router.get(
+  "/api/courses/:id",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const id = req.params.id;
+      const result = await courseService.findOneById(id);
+      if (!result.success) {
+        return next(new BadRequestError(result.message!));
+      }
+      res.status(200).send(result.course!);
+    } catch (error) {
+      next(error);
     }
-    res.send(result.course!);
-  } catch (error) {
-    next(error);
   }
-});
+);
 
-router.get("/api/courses/category/:categoryId", async (req, res, next) => {
-  try {
-    const categoryId = req.params.categoryId;
-    const result = courseService.findAllByCategoryId(categoryId);
-  } catch (error) {
-    next(error);
+router.get(
+  "/api/courses/category/:categoryId",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const categoryId = req.params.categoryId;
+      const result = courseService.findAllByCategoryId(categoryId);
+    } catch (error) {
+      next(error);
+    }
   }
-});
+);
 router.get(
   "/api/courses/instructor/my-courses",
   requireAuth,
@@ -93,38 +102,20 @@ router.post(
       .not()
       .isEmpty()
       .withMessage("Please enter a category name"),
-    body("quizQuestions")
+    body("coupons")
+      .optional()
       .isArray()
-      .withMessage("quizQuestions must be an array"),
-
-    body("quizQuestions.*.question")
-      .notEmpty()
-      .withMessage("Each quiz question must have a question"),
-
-    body("quizQuestions.*.options")
-      .isObject()
-      .withMessage("Options must be an object"),
-
-    body("quizQuestions.*.options.A")
-      .notEmpty()
-      .withMessage("Option A is required"),
-
-    body("quizQuestions.*.options.B")
-      .notEmpty()
-      .withMessage("Option B is required"),
-
-    body("quizQuestions.*.options.C")
-      .notEmpty()
-      .withMessage("Option C is required"),
-
-    body("quizQuestions.*.options.D")
-      .notEmpty()
-      .withMessage("Option D is required"),
-
-    body("quizQuestions.*.correctAnswer")
-      .notEmpty()
-      .isIn(["A", "B", "C", "D"])
-      .withMessage("Correct answer must be one of: A, B, C, or D"),
+      .withMessage("Coupons must be an array"),
+    body("coupons.*.code").notEmpty().withMessage("Coupon code is required"),
+    body("coupons.*.discountPercentage")
+      .isNumeric()
+      .withMessage("Discount percentage must be a number"),
+    body("coupons.*.maxUses")
+      .isInt({ min: 1 })
+      .withMessage("Max uses must be an integer greater than 0"),
+    body("coupons.*.expiryDate")
+      .isISO8601()
+      .withMessage("Expiry date must be a valid date"),
   ],
   ValidationRequest,
   requireAuth,
@@ -132,9 +123,8 @@ router.post(
   roleIsInstructor,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const courseDto = req.body as CourseDto;
+      const courseDto = req.body as CourseDtoWithCoupons;
       const userId = req.currentUser!.userId;
-      // console.log(courseDto.quizQuestions);
 
       const result = await courseService.create(courseDto, userId);
       if (!result.success) {
