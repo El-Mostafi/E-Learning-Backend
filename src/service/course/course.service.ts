@@ -1,20 +1,21 @@
 import mongoose from "mongoose";
 import Course, { CourseDocument, Section, Lecture } from "../../models/course";
-import { CourseDto } from "../../routers/course/dtos/course.dto";
+import { CourseDto, CourseDtoWithCoupons } from "../../routers/course/dtos/course.dto";
 import courseData, {
   courseDataGenerale,
   courseInstructor,
+  courseDataDetails,
 } from "../../../Helpers/course/course.data";
 import { Types } from "mongoose";
 
 export class CourseService {
   constructor() {}
 
-  async create(courseDto: CourseDto, instructorId: mongoose.Types.ObjectId) {
-    const { quizQuestions, ...courseData } = courseDto;
+  async create(courseDto: CourseDtoWithCoupons, instructorId: mongoose.Types.ObjectId) {
+    const { coupons, ...courseData } = courseDto;
     const course = Course.build(courseData);
     course.instructor = instructorId;
-    course.quizQuestions = new Types.DocumentArray(quizQuestions);
+    course.coupons = new Types.DocumentArray(coupons);
     await course.save();
     return {
       success: true,
@@ -40,17 +41,18 @@ export class CourseService {
 
   async findOneById(id: string) {
     const course = await Course.findById(id).populate("instructor", [
+      "id",
       "userName",
       "profileImg",
-      "AboutMe",
-      "speciality",
+      "expertise",
+      "biography",
     ]);
 
     if (!course) {
       return { success: false, message: "Course not Found" };
     }
 
-    return { success: true, course: course };
+    return { success: true, course: this.transformCourseDetails(course) };
   }
 
   async findPublishedCourses() {
@@ -250,6 +252,63 @@ export class CourseService {
       instructorName:(course.instructor as any).userName,
       instructorImg:(course.instructor as any).profileImg,
       InstructorId:(course.instructor as any).id,
+      createdAt: course.createdAt,
+    };
+  }
+  private transformCourseDetails(course: CourseDocument): courseDataDetails {
+    const totalRating = course.reviews.reduce(
+      (sum, review) => sum + review.rating,
+      0
+    );
+    const averageRating = course.reviews.length
+      ? totalRating / course.reviews.length
+      : 0;
+      const ratingsCount = [0, 0, 0, 0, 0]; 
+
+      course.reviews.forEach((review) => {
+        const rating = review.rating;
+        if (rating >= 1 && rating <= 5) {
+          ratingsCount[rating - 1]++;
+        }
+      });
+    const totaleDuration = course.sections.reduce((total: number, section: Section) => {
+      return total + section.lectures.reduce((sectionTotal: number, lecture: Lecture) => {
+        return sectionTotal + lecture.duration;
+      }, 0);
+    }, 0);
+    return {
+      id: (course._id as mongoose.Types.ObjectId).toString(),
+      title: course.title,
+      description: course.description,
+      thumbnailPreview: course.thumbnailPreview,
+      category: course.category.name,
+      level: course.level,
+      price: course.pricing.price,
+      reviews: averageRating,
+      reviewsLenght: course.reviews.length,
+      ratingsCount: ratingsCount,
+      duration: totaleDuration,
+      sections: course.sections.map((section) => ({
+        id: section.id.toString(),
+        title: section.title,
+        orderIndex: section.orderIndex,
+        isPreview: section.isPreview,
+        lectures: section.lectures.map((lecture) => ({
+          id: lecture.id.toString(),
+          title: lecture.title,
+          description: lecture.description,
+          duration: lecture.duration,
+          videoUrl: lecture.videoUrl,
+          publicId: lecture.publicId,
+          isPreview: lecture.isPreview,
+        })),
+      })),
+      students: course.students.length,
+      instructorName:(course.instructor as any).userName,
+      instructorImg:(course.instructor as any).profileImg,
+      InstructorId:(course.instructor as any).id,
+      instructorExpertise:(course.instructor as any).expertise,
+      instructorBaiography:(course.instructor as any).biography,
       createdAt: course.createdAt,
     };
   }

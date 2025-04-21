@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import { Category } from "../../src/models/schemas/category";
 import { Review } from "../../src/models/schemas/review";
 import SectionData from "./section.data";
+import { SectionDto } from "src/routers/course/dtos/course.dto";
 
 interface courseData {
   id: string;
@@ -37,6 +38,14 @@ export interface courseDataGenerale extends courseInstructor {
   price: number;
   duration: number;
   InstructorId: string;
+}
+export interface courseDataDetails extends courseDataGenerale {
+  reviewsLenght: number;
+  ratingsCount: number[];
+  sections:SectionData[];
+  instructorExpertise: string;
+  instructorBaiography: string;
+
 }
 
 export default courseData;
