@@ -42,10 +42,16 @@ export interface courseDataGenerale extends courseInstructor {
 export interface courseDataDetails extends courseDataGenerale {
   reviewsLenght: number;
   ratingsCount: number[];
-  sections:SectionData[];
+  sections: SectionData[];
   instructorExpertise: string;
   instructorBaiography: string;
-
+  feedbacks: {
+    rating: number;
+    comment: string;
+    userName?: string;
+    userImg?: string;
+    createdAt: Date;
+  }[];
 }
 
 export default courseData;

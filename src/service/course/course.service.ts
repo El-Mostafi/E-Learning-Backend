@@ -287,6 +287,13 @@ export class CourseService {
       reviews: averageRating,
       reviewsLenght: course.reviews.length,
       ratingsCount: ratingsCount,
+      feedbacks: course.reviews.map((review) => ({
+        rating: review.rating,
+        comment: review.text,
+        userName: review.userName,
+        userImg: review.userImg,
+        createdAt: review.createdAt,
+      })),
       duration: totaleDuration,
       sections: course.sections.map((section) => ({
         id: section.id.toString(),
