@@ -45,6 +45,25 @@ router.get(
     }
   }
 );
+router.get(
+  "/api/courses/:id/update-course",
+  requireAuth,
+  currentUser,
+  roleIsInstructor,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const courseId = req.params.id;
+      const userId = req.currentUser!.userId;
+      const result = await courseService.findOneByIdForUpdate(userId, courseId);
+      if (!result.success) {
+        return next(new BadRequestError(result.message!));
+      }
+      res.status(200).send(result.course!);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 router.get(
   "/api/courses/category/:categoryId",
@@ -144,18 +163,20 @@ router.post(
 router.put(
   "/api/courses/:id/update-course",
   [
-    body("title").not().isEmpty().withMessage("Please enter a title"),
+  body("title").not().isEmpty().withMessage("Please enter a title"),
     body("description")
       .not()
       .isEmpty()
       .withMessage("Please enter a description"),
-    body("coverImg")
+    body("thumbnailPreview")
       .not()
       .isEmpty()
       .withMessage("Please enter a cover image URL"),
+    body("imgPublicId").not().isEmpty().withMessage("Please enter a publicId"),
     body("level").not().isEmpty().withMessage("Please enter a level"),
     body("language").not().isEmpty().withMessage("Please enter a language"),
-    body("price").isNumeric().withMessage("Please enter a valid price"),
+    body("pricing.price").isNumeric().withMessage("Please enter a valid price"),
+    body("pricing.isFree").isBoolean().withMessage("isFree must be a boolean"),
     body("oldPrice")
       .optional()
       .isNumeric()
@@ -164,10 +185,20 @@ router.put(
       .not()
       .isEmpty()
       .withMessage("Please enter a category name"),
-    body("category.description")
+    body("coupons")
       .optional()
-      .isString()
-      .withMessage("Please enter a valid category description"),
+      .isArray()
+      .withMessage("Coupons must be an array"),
+    body("coupons.*.code").notEmpty().withMessage("Coupon code is required"),
+    body("coupons.*.discountPercentage")
+      .isNumeric()
+      .withMessage("Discount percentage must be a number"),
+    body("coupons.*.maxUses")
+      .isInt({ min: 1 })
+      .withMessage("Max uses must be an integer greater than 0"),
+    body("coupons.*.expiryDate")
+      .isISO8601()
+      .withMessage("Expiry date must be a valid date"),
   ],
   ValidationRequest,
   requireAuth,
@@ -177,7 +208,7 @@ router.put(
     try {
       const userId = req.currentUser!.userId;
       const courseId = req.params.id;
-      const courseDto = req.body as CourseDto;
+      const courseDto = req.body as CourseDtoWithCoupons;
       const result = await courseService.updateOneById(
         userId,
         courseId,
@@ -186,7 +217,10 @@ router.put(
       if (!result.success) {
         return next(new BadRequestError(result.message));
       }
-      res.send(result.message);
+      res.status(201).send({
+        message: result.message,
+        success: result.success
+      });
     } catch (error) {
       next(error);
     }

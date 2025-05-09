@@ -119,7 +119,7 @@ router.put(
       const courseId = req.params.id;
       const sectionId = req.params.sectionId;
       const lectureId = req.params.lectureId;
-      const lectureDto = req.body;
+      const lectureDto = req.body as LectureDto ;
       const result = await lectureService.update(
         userId,
         courseId,
@@ -130,7 +130,10 @@ router.put(
       if (!result.success) {
         return next(new BadRequestError(result.message));
       }
-      res.send(result.message);
+      res.status(201).send({
+        message: result.message,
+        success: result.success,
+      });
     } catch (error) {
       next(error);
     }

@@ -4,7 +4,7 @@ interface SectionData {
   id: string;
   title: string;
   orderIndex: number;
-  isPreview: boolean;
+  description: string;
   lectures: LectureData[];
 }
 interface LectureData {
@@ -14,7 +14,6 @@ interface LectureData {
   duration: number;
   videoUrl: string;
   publicId: string;
-  isPreview: boolean;
 }
 
 export default SectionData;

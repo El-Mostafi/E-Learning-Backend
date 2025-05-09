@@ -1,17 +1,24 @@
 import mongoose from "mongoose";
 import Course, { CourseDocument, Section, Lecture } from "../../models/course";
-import { CourseDto, CourseDtoWithCoupons } from "../../routers/course/dtos/course.dto";
+import {
+  CourseDto,
+  CourseDtoWithCoupons,
+} from "../../routers/course/dtos/course.dto";
 import courseData, {
   courseDataGenerale,
   courseInstructor,
   courseDataDetails,
+  courseToEdit,
 } from "../../../Helpers/course/course.data";
 import { Types } from "mongoose";
 
 export class CourseService {
   constructor() {}
 
-  async create(courseDto: CourseDtoWithCoupons, instructorId: mongoose.Types.ObjectId) {
+  async create(
+    courseDto: CourseDtoWithCoupons,
+    instructorId: mongoose.Types.ObjectId
+  ) {
     const { coupons, ...courseData } = courseDto;
     const course = Course.build(courseData);
     course.instructor = instructorId;
@@ -36,7 +43,10 @@ export class CourseService {
       return { success: false, message: "No courses found" };
     }
 
-    return { success: true, courses: courses.map(this.transformCourse) };
+    return {
+      success: true,
+      courses: courses.map(this.transformCourseGenerale),
+    };
   }
 
   async findOneById(id: string) {
@@ -54,17 +64,35 @@ export class CourseService {
 
     return { success: true, course: this.transformCourseDetails(course) };
   }
+  async findOneByIdForUpdate(
+    userId: mongoose.Types.ObjectId,
+    courseId: string
+  ) {
+    const course = await Course.findById(courseId);
+
+    if (!course) {
+      return { success: false, message: "Course not Found" };
+    }
+    if (course.instructor.toString() !== userId.toString()) {
+      return { success: false, message: "Permission denied!" };
+    }
+
+    return { success: true, course: this.transformCourseToEdit(course) };
+  }
 
   async findPublishedCourses() {
     const courses = await Course.find({ isPublished: true }).populate(
       "instructor",
-      ["id","userName", "profileImg", "AboutMe", "speciality"]
+      ["id", "userName", "profileImg", "AboutMe", "speciality"]
     );
     if (!courses) {
       return { success: false, message: "No published courses found" };
     }
 
-    return { success: true, courses: courses.map(course => this.transformCourseGenerale(course)) };
+    return {
+      success: true,
+      courses: courses.map((course) => this.transformCourseGenerale(course)),
+    };
   }
 
   async findAllByInstructorId(instructorId: mongoose.Types.ObjectId) {
@@ -77,7 +105,7 @@ export class CourseService {
     }
     return {
       success: true,
-      courses: courses.map(course => this.transformInstructor(course)),
+      courses: courses.map((course) => this.transformInstructor(course)),
     };
   }
 
@@ -90,14 +118,18 @@ export class CourseService {
     if (!courses) {
       return { success: false, message: "No courses found" };
     }
-    return { success: true, courses: courses.map(this.transformCourse) };
+    return {
+      success: true,
+      courses: courses.map(this.transformCourseGenerale),
+    };
   }
 
   async updateOneById(
     userId: mongoose.Types.ObjectId,
     courseId: string,
-    courseDto: CourseDto
+    courseDto: CourseDtoWithCoupons
   ) {
+    
     const course = await Course.findById(courseId);
     if (!course) {
       return { success: false, message: "Course not found" };
@@ -105,7 +137,8 @@ export class CourseService {
     if (course.instructor.toString() !== userId.toString()) {
       return { success: false, message: "Permission denied!" };
     }
-    const updatedCourse = await Course.findByIdAndUpdate(courseId, courseDto, {
+    const { coupons, ...courseData } = courseDto;
+    const updatedCourse = await Course.findByIdAndUpdate(courseId, courseData, {
       new: true,
     });
     if (!updatedCourse) {
@@ -114,6 +147,10 @@ export class CourseService {
         message: "Error while trying to update the course",
       };
     }
+    course.set('sections',[]);
+    course.set('quizQuestions',[]);
+    course.set('coupons', coupons);
+    await course.save();
     return { success: true, message: "Course updated successfully!" };
   }
 
@@ -179,27 +216,44 @@ export class CourseService {
     return { success: true, message: "Course unpublished successfully" };
   }
 
-  private transformCourse(course: any): courseData {
+  private transformCourseToEdit(course: CourseDocument): courseToEdit {
     return {
-      id: course._id.toString(),
+      id: course.id.toString(),
       title: course.title,
+      imgPublicId: course.imgPublicId,
       description: course.description,
-      coverImg: course.coverImg,
+      thumbnailPreview: course.thumbnailPreview,
+      category:{
+        name: course.category.name
+      },
       level: course.level,
       language: course.language,
-      price: course.price,
-      oldPrice: course.oldPrice,
-      category: course.category,
-      reviews: course.reviews,
-      sections: course.sections.map((section: any) => ({
-        id: section._id.toString(),
+      sections: course.sections.map((section) => ({
+        id: section.id.toString(),
         title: section.title,
-        lectures: section.lectures.map((lecture: any) => lecture.title),
+        description: section.description,
+        orderIndex: section.orderIndex,
+        lectures: section.lectures.map((lecture) => ({
+          id: lecture.id.toString(),
+          title: lecture.title,
+          description: lecture.description,
+          duration: lecture.duration,
+          videoUrl: lecture.videoUrl,
+          publicId: lecture.publicId,
+        })),
       })),
-      certifications: course.certificates.length,
-      students: course.students.length,
-      instructorName: course.instructor.userName,
-      instructorImg: course.instructor.profileImg,
+      quizQuestions: course.quizQuestions.map((question) => ({
+        id: question.id.toString(),
+        question: question.question,
+        options: question.options,
+        correctAnswer: question.correctAnswer,
+      })),
+      pricing: {
+        price: course.pricing.price,
+        isFree: course.pricing.isFree,
+      },
+      oldPrice: course.oldPrice,
+      coupons: course.coupons,
     };
   }
 
@@ -219,8 +273,8 @@ export class CourseService {
       level: course.level,
       reviews: averageRating,
       students: course.students.length,
-      instructorName:(course.instructor as any).userName,
-      instructorImg:(course.instructor as any).profileImg,
+      instructorName: (course.instructor as any).userName,
+      instructorImg: (course.instructor as any).profileImg,
       createdAt: course.createdAt,
     };
   }
@@ -233,11 +287,17 @@ export class CourseService {
     const averageRating = course.reviews.length
       ? totalRating / course.reviews.length
       : 0;
-    const totaleDuration = course.sections.reduce((total: number, section: Section) => {
-      return total + section.lectures.reduce((sectionTotal: number, lecture: Lecture) => {
-        return sectionTotal + lecture.duration;
-      }, 0);
-    }, 0);
+    const totaleDuration = course.sections.reduce(
+      (total: number, section: Section) => {
+        return (
+          total +
+          section.lectures.reduce((sectionTotal: number, lecture: Lecture) => {
+            return sectionTotal + lecture.duration;
+          }, 0)
+        );
+      },
+      0
+    );
     return {
       id: (course._id as mongoose.Types.ObjectId).toString(),
       title: course.title,
@@ -249,9 +309,9 @@ export class CourseService {
       reviews: averageRating,
       duration: totaleDuration,
       students: course.students.length,
-      instructorName:(course.instructor as any).userName,
-      instructorImg:(course.instructor as any).profileImg,
-      InstructorId:(course.instructor as any).id,
+      instructorName: (course.instructor as any).userName,
+      instructorImg: (course.instructor as any).profileImg,
+      InstructorId: (course.instructor as any).id,
       createdAt: course.createdAt,
     };
   }
@@ -263,19 +323,25 @@ export class CourseService {
     const averageRating = course.reviews.length
       ? totalRating / course.reviews.length
       : 0;
-      const ratingsCount = [0, 0, 0, 0, 0]; 
+    const ratingsCount = [0, 0, 0, 0, 0];
 
-      course.reviews.forEach((review) => {
-        const rating = review.rating;
-        if (rating >= 1 && rating <= 5) {
-          ratingsCount[rating - 1]++;
-        }
-      });
-    const totaleDuration = course.sections.reduce((total: number, section: Section) => {
-      return total + section.lectures.reduce((sectionTotal: number, lecture: Lecture) => {
-        return sectionTotal + lecture.duration;
-      }, 0);
-    }, 0);
+    course.reviews.forEach((review) => {
+      const rating = review.rating;
+      if (rating >= 1 && rating <= 5) {
+        ratingsCount[rating - 1]++;
+      }
+    });
+    const totaleDuration = course.sections.reduce(
+      (total: number, section: Section) => {
+        return (
+          total +
+          section.lectures.reduce((sectionTotal: number, lecture: Lecture) => {
+            return sectionTotal + lecture.duration;
+          }, 0)
+        );
+      },
+      0
+    );
     return {
       id: (course._id as mongoose.Types.ObjectId).toString(),
       title: course.title,
@@ -298,6 +364,7 @@ export class CourseService {
       sections: course.sections.map((section) => ({
         id: section.id.toString(),
         title: section.title,
+        description: section.description,
         orderIndex: section.orderIndex,
         isPreview: section.isPreview,
         lectures: section.lectures.map((lecture) => ({
@@ -311,11 +378,11 @@ export class CourseService {
         })),
       })),
       students: course.students.length,
-      instructorName:(course.instructor as any).userName,
-      instructorImg:(course.instructor as any).profileImg,
-      InstructorId:(course.instructor as any).id,
-      instructorExpertise:(course.instructor as any).expertise,
-      instructorBaiography:(course.instructor as any).biography,
+      instructorName: (course.instructor as any).userName,
+      instructorImg: (course.instructor as any).profileImg,
+      InstructorId: (course.instructor as any).id,
+      instructorExpertise: (course.instructor as any).expertise,
+      instructorBaiography: (course.instructor as any).biography,
       createdAt: course.createdAt,
     };
   }

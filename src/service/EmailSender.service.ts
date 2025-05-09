@@ -4,15 +4,15 @@ export class EmailSenderService {
   public readonly transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
-      user: "helpdesk.elearningapp@gmail.com",
-      pass: "pdyh dpib wibh jfxd",
+      user: process.env.EMAIL,
+      pass: process.env.EMAIL_KEY,
     },
   });
   constructor() {}
 
   async sendEmail(email: string, subject: string, html: string) {
     const mailOptions = {
-      from: "helpdesk.elearningapp@gmail.com",
+      from: process.env.EMAIL,
       to: email,
       subject: subject,
       html: html,
