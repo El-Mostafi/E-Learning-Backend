@@ -1,0 +1,85 @@
+import mongoose from "mongoose";
+import { CartService } from "../cart/cart.service";
+import Stripe from "stripe";
+import { BadRequestError } from "../../../common";
+import { EnrollmentService } from "../enrollment/enrollment.service";
+
+const cartService = new CartService();
+const enrollmentService = new EnrollmentService();
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: "2025-02-24.acacia",
+  typescript: true,
+});
+
+export class StripeService {
+  constructor() {}
+
+  async createPaymentIntent(userId: mongoose.Types.ObjectId) {
+    const cart = await cartService.getCart(userId);
+
+    if (!cart) {
+      throw new BadRequestError("User Not Found or Cart is Empty!");
+    }
+    const amount = Math.round(cart.total * 100);
+    const currency = "usd";
+
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount,
+      currency,
+      automatic_payment_methods: { enabled: true },
+      metadata: {
+        userId: userId.toString(),
+        courseIds: cart.courses.map((c) => c._id).join(","),
+      },
+    });
+
+    return paymentIntent;
+  }
+
+  async handleStripeWebhook(event: Stripe.Event) {
+    if (event.type === "payment_intent.succeeded") {
+      const paymentIntent = event.data.object as Stripe.PaymentIntent;
+      const userId = paymentIntent.metadata.userId;
+      const courseIds = paymentIntent.metadata.courseIds?.split(",");
+
+      if (!userId || !courseIds || courseIds.length === 0) {
+        console.warn("⚠️ Missing metadata for userId or courseIds");
+        return;
+      }
+
+      const userObjectId = new mongoose.Types.ObjectId(userId);
+      const session = await mongoose.startSession();
+
+      try {
+        await session.withTransaction(async () => {
+          for (const courseId of courseIds) {
+            const courseObjectId = new mongoose.Types.ObjectId(courseId);
+            await enrollmentService.enroll(
+              courseObjectId,
+              userObjectId,
+              session
+            );
+          }
+
+          // Optionally clear the cart inside the transaction too
+          await cartService.clearCart(userObjectId, session);
+        });
+
+        console.log(
+          `✅ User ${userId} enrolled in courses: ${courseIds.join(", ")}`
+        );
+      } catch (err) {
+        console.error(`❌ Failed to enroll user ${userId}:`, err);
+        throw err; // Let Stripe retry
+      } finally {
+        session.endSession();
+      }
+    } else {
+      console.log(`ℹ️ Unhandled event type: ${event.type}`);
+    }
+  }
+}
+
+const stripeService = new StripeService();
+export default stripeService;
