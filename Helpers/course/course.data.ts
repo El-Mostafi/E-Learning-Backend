@@ -1,36 +1,35 @@
 import mongoose from "mongoose";
 import { Category } from "../../src/models/schemas/category";
 import { Review } from "../../src/models/schemas/review";
-import SectionData from "./section.data";
-import { SectionDto } from "src/routers/course/dtos/course.dto";
 
-interface courseData {
+interface SectionData {
   id: string;
   title: string;
   description: string;
-  coverImg: string;
-  level: string;
-  language: string;
-  price: number;
-  oldPrice?: number;
-  category: Category;
-  reviews: mongoose.Types.DocumentArray<Review>;
-  sections: SectionData[];
-  certifications: number;
-  students: number;
-  instructorName: string;
-  instructorImg: string;
+  orderIndex: number;
+  isPreview: boolean;
+  lectures: {
+    id: string;
+    title: string;
+    description: string;
+    duration: number;
+    isPreview: boolean;
+    videoUrl: string | "";
+    publicId?: string;
+  }[];
 }
+
 export interface courseInstructor {
   id: string;
   title: string;
   thumbnailPreview: string;
   category: string;
   level: string;
+  language: string;
   reviews: number;
   students: number;
-  instructorName: string;
-  instructorImg: string;
+  instructorName?: string;
+  instructorImg?: string;
   createdAt: Date;
 }
 export interface courseDataGenerale extends courseInstructor {
@@ -42,9 +41,8 @@ export interface courseDataGenerale extends courseInstructor {
 export interface courseDataDetails extends courseDataGenerale {
   reviewsLenght: number;
   ratingsCount: number[];
-  sections: SectionData[];
-  instructorExpertise: string;
-  instructorBaiography: string;
+  instructorExpertise?: string;
+  instructorBiography?: string;
   feedbacks: {
     rating: number;
     comment: string;
@@ -54,4 +52,13 @@ export interface courseDataDetails extends courseDataGenerale {
   }[];
 }
 
-export default courseData;
+export interface courseData extends courseDataDetails {
+  description: string;
+  sections: SectionData[];
+  certifications: number;
+  progress?: number;
+  completed?: boolean;
+  completedAt?: Date | null;
+  startedAt?: Date;
+  isUserEnrolled: boolean;
+}

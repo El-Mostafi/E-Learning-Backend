@@ -19,9 +19,11 @@ import { examRouter } from "./routers/course/exam.routers";
 import { enrollmentRouter } from "./routers/enrollment/enrollment.routers";
 import { cloudRouters } from "../src/routers/cloudinary/cloud.routers";
 import { stripeRouters } from "../src/routers/Stripe/stripe.routers";
-import {studentRouters} from '../src/routers/student/student.routers'
-import {instructorRouters} from '../src/routers/instructor/instructor.routers'
+import { studentRouters } from "../src/routers/student/student.routers";
+import { instructorRouters } from "../src/routers/instructor/instructor.routers";
 import "./service/course/cleanup.service";
+import { cartRouters } from "./routers/cart/cart.routers";
+import { reviewRouters } from "./routers/review/review.routers";
 
 export class AppModule {
   constructor(public app: Application) {
@@ -34,7 +36,10 @@ export class AppModule {
       })
     );
     app.use(express.urlencoded({ extended: false })); //must be true for frontend
-    app.use(express.json());
+    app.use((req, res, next) => {
+      if (req.originalUrl === "/webhook") return next();
+      express.json()(req, res, next);
+    });
     app.use(
       cookieSession({
         signed: false,
@@ -55,24 +60,24 @@ export class AppModule {
       throw new Error(err);
     }
     // this.app.use(currentUser);
-    
+
     this.app.use(studentRouters);
     this.app.use(courseRouter);
     this.app.use(sectionRouter);
     this.app.use(lectureRouter);
     this.app.use(examRouter);
-    this.app.use(enrollmentRouter)
+    this.app.use(enrollmentRouter);
     this.app.use(authRouters);
     this.app.use(cloudRouters);
     this.app.use(stripeRouters);
     this.app.use(instructorRouters);
-    
+    this.app.use(cartRouters);
+    this.app.use(reviewRouters);
+
     this.app.all("*", (req, res, next) => {
       next(new NotFoundError());
     });
     this.app.use(errorHandler);
-
-    
 
     this.app.listen(8031, () => console.log("Server is running on port 8031"));
   }

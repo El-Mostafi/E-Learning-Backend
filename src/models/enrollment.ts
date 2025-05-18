@@ -1,22 +1,29 @@
 import mongoose from "mongoose";
 
-export interface Enrollment extends mongoose.Document {
+export interface completedSection {
+  sectionId: mongoose.Types.ObjectId;
+  lectureId: mongoose.Types.ObjectId;
+  completedAt: Date;
+}
+
+export interface EnrollmentDocument extends mongoose.Document {
   course: mongoose.Types.ObjectId;
   participant: mongoose.Types.ObjectId;
+  completedSections: completedSection[];
   progress: number;
   completed: boolean;
   completedAt: Date | null;
   startedAt: Date;
 }
 
-export interface EnrollmentModel extends mongoose.Model<Enrollment> {
+export interface EnrollmentModel extends mongoose.Model<EnrollmentDocument> {
   build(enrollment: {
     course: mongoose.Types.ObjectId;
     participant: mongoose.Types.ObjectId;
-  }): Enrollment;
+  }): EnrollmentDocument;
 }
 
-const enrollmentSchema = new mongoose.Schema<Enrollment>({
+const enrollmentSchema = new mongoose.Schema<EnrollmentDocument>({
   course: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Course",
@@ -27,6 +34,24 @@ const enrollmentSchema = new mongoose.Schema<Enrollment>({
     ref: "User",
     required: true,
   },
+  completedSections: [
+    {
+      sectionId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Section",
+        required: true,
+      },
+      lectureId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Lecture",
+        required: true,
+      },
+      completedAt: {
+        type: Date,
+        default: null,
+      },
+    },
+  ],
   progress: {
     type: Number,
     default: 0,
@@ -52,5 +77,8 @@ enrollmentSchema.statics.build = (enrollment: {
   return new Enrollment(enrollment);
 };
 
-const Enrollment = mongoose.model<Enrollment, EnrollmentModel>("Enrollment", enrollmentSchema);
+const Enrollment = mongoose.model<EnrollmentDocument, EnrollmentModel>(
+  "Enrollment",
+  enrollmentSchema
+);
 export default Enrollment;

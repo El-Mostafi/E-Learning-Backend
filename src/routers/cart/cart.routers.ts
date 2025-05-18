@@ -1,5 +1,4 @@
 import { Router, Request, Response, NextFunction } from "express";
-import { body } from "express-validator";
 import {
   currentUser,
   requireAuth,
@@ -11,43 +10,35 @@ import mongoose from "mongoose";
 const router = Router();
 
 router.post(
-  "/cart",
-  [body("courseId").not().isEmpty().withMessage("Course ID is required")],
-  ValidationRequest,
+  "/api/cart/add",
   requireAuth,
   currentUser,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const result = await cartService.addToCart(
+      const courseId = new mongoose.Types.ObjectId(req.body.courseId);
+      const cart = await cartService.addToCart(
         new mongoose.Types.ObjectId(req.currentUser!.userId),
-        new mongoose.Types.ObjectId(req.body.courseId)
+        courseId
       );
-
-      if (!result.success) {
-        return next(new BadRequestError(result.message!));
-      }
-
-      res.status(200).json(result.cart);
+      res.status(201).json(cart);
     } catch (error) {
+      console.log(error);
       next(error);
     }
   }
 );
 
 router.delete(
-  "/cart/:courseId",
+  "/api/cart/remove",
   requireAuth,
   currentUser,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const result = await cartService.removeFromCart(
+      const courseId = new mongoose.Types.ObjectId(req.body.courseId);
+      const cart = await cartService.removeFromCart(
         new mongoose.Types.ObjectId(req.currentUser!.userId),
-        new mongoose.Types.ObjectId(req.params.courseId)
+        courseId
       );
-      if (!result.success) {
-        return next(new BadRequestError(result.message!));
-      }
-      const cart = result.cart;
       res.status(200).json(cart);
     } catch (error) {
       next(error);
@@ -55,5 +46,53 @@ router.delete(
   }
 );
 
-// Add routes for getCart and clearCart
-export default router;
+router.get(
+  "/api/cart",
+  requireAuth,
+  currentUser,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const cart = await cartService.getCart(req.currentUser!.userId);
+      res.status(200).json(cart);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+router.post(
+  "/api/cart/apply-coupon",
+  requireAuth,
+  currentUser,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { courseId, couponCode } = req.body;
+      const cart = await cartService.applyCoupon(
+        req.currentUser!.userId,
+        courseId,
+        couponCode
+      );
+      res.status(200).json(cart);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// router.delete(
+//   "/api/cart/clear",
+//   requireAuth,
+//   currentUser,
+//   async (req: Request, res: Response, next: NextFunction) => {
+//     try {
+//       const cart = await cartService.clearCart(
+//         new mongoose.Types.ObjectId(req.currentUser!.userId)
+//       );
+//       res.status(200).json(cart);
+//     } catch (error) {
+//       next(error);
+//     }
+//   }
+// );
+
+export { router as cartRouters };

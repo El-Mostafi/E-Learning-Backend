@@ -3,6 +3,7 @@ import { AuthenticationService } from "../../common";
 import { BadRequestError } from "../../common";
 import reviewSchema, { Review } from "./schemas/review";
 import certificateSchema, { Certificate } from "./schemas/certificate";
+import { CartItem, cartItemSchema } from "./cartItem";
 export type UserRole = "admin" | "instructor" | "student";
 
 export interface UserDocument extends mongoose.Document {
@@ -27,7 +28,7 @@ export interface UserDocument extends mongoose.Document {
   enrollments: mongoose.Types.ObjectId[];
   reviews: mongoose.Types.DocumentArray<Review>;
   certificates: mongoose.Types.DocumentArray<Certificate>;
-  cart: mongoose.Types.Array<mongoose.Types.ObjectId>;
+  cart: mongoose.Types.Array<CartItem>;
 }
 
 export interface CreateUserDto {
@@ -146,11 +147,7 @@ const userSchema = new mongoose.Schema<UserDocument>({
   // Fields related to certificates
 
   certificates: [certificateSchema],
-  cart: {
-    type: [mongoose.Schema.Types.ObjectId],
-    ref: "Course",
-    default: () => [], 
-  },
+  cart: [cartItemSchema],
 });
 
 

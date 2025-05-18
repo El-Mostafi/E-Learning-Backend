@@ -7,25 +7,25 @@ import { roleIsStudent } from "../../../common/src/middllewares/validate-roles";
 const router = Router();
 const enrollmentService = new EnrollmentService();
 
-router.post(
-  "/api/courses/:courseId/enroll",
-  requireAuth,
-  currentUser,
-  roleIsStudent,
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const userId = req.currentUser!.userId;
-      const courseId = new mongoose.Types.ObjectId(req.params.courseId);
-      const result = await enrollmentService.enroll(courseId, userId);
-      if (!result.success) {
-        return next(new BadRequestError(result.message!));
-      }
-      res.status(200).send(result.enrollment!);
-    } catch (error: any) {
-      next(error);
-    }
-  }
-);
+// router.post(
+//   "/api/courses/:courseId/enroll",
+//   requireAuth,
+//   currentUser,
+//   roleIsStudent,
+//   async (req: Request, res: Response, next: NextFunction) => {
+//     try {
+//       const userId = req.currentUser!.userId;
+//       const courseId = new mongoose.Types.ObjectId(req.params.courseId);
+//       const result = await enrollmentService.enroll(courseId, userId);
+//       if (!result.success) {
+//         return next(new BadRequestError(result.message!));
+//       }
+//       res.status(200).send(result.message!);
+//     } catch (error: any) {
+//       next(error);
+//     }
+//   }
+// );
 
 router.get(
   "/api/my-courses/enrolled",
@@ -56,10 +56,11 @@ router.get(
       const userId = req.currentUser!.userId;
       const courseId = req.params.courseId;
       const result = await enrollmentService.findOneById(userId, courseId);
+      console.log(result);
       if (!result.success) {
         return next(new BadRequestError(result.message!));
       }
-      res.status(200).send(result.course!);
+      res.status(200).send(result.enrollment!);
     } catch (error: any) {
       next(error);
     }
@@ -67,21 +68,21 @@ router.get(
 );
 
 router.put(
-  "/api/my-courses/enrolled:courseId/update-progress",
+  "/api/my-courses/enrolled/:courseId/update-progress/:sectionId/:lectureId",
   requireAuth,
   currentUser,
   roleIsStudent,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const courseId = new mongoose.Types.ObjectId(req.params.courseId);
+      const sectionId = new mongoose.Types.ObjectId(req.params.sectionId);
+      const lectureId = new mongoose.Types.ObjectId(req.params.lectureId);
       const userId = req.currentUser!.userId;
-      const result = await enrollmentService.updateProgress(courseId, userId);
+      const result = await enrollmentService.updateProgress(courseId, sectionId, lectureId, userId);
       if (!result.success) {
         return next(new BadRequestError(result.message!));
       }
       res.status(200).send(result.enrollment!);
-
-      // To define redirecting later for the next lecture.....
     } catch (error) {
       next(error);
     }

@@ -10,7 +10,11 @@ import {
   updateFileTags,
   deleteVideosImageInCourse,
 } from "../../../common";
-import { roleIsInstructor } from "../../../common/src/middllewares/validate-roles";
+import {
+  roleIsInstructor,
+  roleIsStudent,
+} from "../../../common/src/middllewares/validate-roles";
+import mongoose from "mongoose";
 
 const router = Router();
 const courseService = new CourseService();
@@ -31,11 +35,13 @@ router.get(
 );
 
 router.get(
-  "/api/courses/:id",
+  "/api/courses/:courseId",
+  currentUser,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const id = req.params.id;
-      const result = await courseService.findOneById(id);
+      const courseId = req.params.courseId;
+      const userId = req.currentUser?.userId;
+      const result = await courseService.findOneById(courseId, userId);
       if (!result.success) {
         return next(new BadRequestError(result.message!));
       }
@@ -48,10 +54,16 @@ router.get(
 
 router.get(
   "/api/courses/category/:categoryId",
+  currentUser,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const categoryId = req.params.categoryId;
-      const result = courseService.findAllByCategoryId(categoryId);
+      const userId = req.currentUser?.userId;
+      const result = await courseService.findAllByCategoryId(categoryId, userId);
+      if (!result.success){
+        return next(new BadRequestError(result.message!));
+      }
+      res.send(result.courses)
     } catch (error) {
       next(error);
     }
@@ -256,6 +268,42 @@ router.delete(
         return next(new BadRequestError(result.message));
       }
       res.status(200).send(result.message);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+router.post(
+  "/api/courses/verify-coupon",
+  requireAuth,
+  currentUser,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { courseId, couponCode } = req.body;
+      const result = await courseService.verifyCoupon(courseId, couponCode);
+
+      res.status(200).json(result.discountPercentage);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+router.get(
+  "/api/courses/:courseId/check-enrollment",
+  requireAuth,
+  currentUser,
+  roleIsStudent,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const courseId = new mongoose.Types.ObjectId(req.params.courseId);
+      const userId = req.currentUser!.userId;
+      const result = await courseService.checkEnrollment(userId, courseId);
+      if (!result.success) {
+        return next(new BadRequestError(result.message!));
+      }
+      res.status(200).send(result.success!);
     } catch (error) {
       next(error);
     }

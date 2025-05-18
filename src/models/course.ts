@@ -20,6 +20,7 @@ export enum Language {
 }
 
 export interface Lecture extends mongoose.Document {
+  _id: mongoose.Types.ObjectId;
   title: string;
   description: string;
   duration: number;
@@ -29,6 +30,7 @@ export interface Lecture extends mongoose.Document {
 }
 
 export interface Section extends mongoose.Document {
+  _id: mongoose.Types.ObjectId;
   title: string;
   description: string;
   orderIndex: number;
