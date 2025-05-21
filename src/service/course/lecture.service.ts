@@ -98,6 +98,8 @@ export class LectureService {
     lecture.duration = lectureDto.duration;
     lecture.videoUrl = lectureDto.videoUrl;
     lecture.description = lectureDto.description;
+    lecture.publicId = lectureDto.publicId;
+    lecture.isPreview = lectureDto.isPreview;
 
     await course.save();
     return { success: true, message: "Lecture updated successfully" };

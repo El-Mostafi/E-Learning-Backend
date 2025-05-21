@@ -1,7 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { v2 as cloudinary } from "cloudinary";
-import { ISignatureResponse } from "./dtos/cloud.dto";
-import { requireAuth } from "../../../common";
+import { BadRequestError, NotFoundError, requireAuth } from "../../../common";
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -11,39 +10,100 @@ cloudinary.config({
 export default cloudinary;
 const router = Router();
 
+const getSignature = (
+  uploadPreset: string,
+  extraParams: Record<string, any> = {}
+) => {
+  const timestamp = Math.round(Date.now() / 1000);
+  const params = { timestamp, upload_preset: uploadPreset, ...extraParams };
+  const signature = cloudinary.utils.api_sign_request(
+    params,
+    process.env.CLOUDINARY_API_SECRET as string
+  );
+  return { timestamp, signature };
+};
+
 router.get(
   "/api/get-signature/image",
   requireAuth,
-  (req: Request, res: Response<ISignatureResponse>, next: NextFunction) => {
-    const timestamp = Math.round(Date.now() / 1000);
-    const signature = cloudinary.utils.api_sign_request(
-      { timestamp, upload_preset: "images_preset" },
-      process.env.CLOUDINARY_API_SECRET as string
-    );
+  (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (
+        !process.env.CLOUDINARY_API_SECRET ||
+        !process.env.CLOUDINARY_API_KEY
+      ) {
+        throw new Error("Cloudinary environment variables are missing.");
+      }
 
-    res.json({
-      timestamp,
-      signature,
-      apiKey: process.env.CLOUDINARY_API_KEY as string,
-    });
+      const { timestamp, signature } = getSignature("images_preset");
+
+      res.json({
+        timestamp,
+        signature,
+        apiKey: process.env.CLOUDINARY_API_KEY,
+      });
+    } catch (error) {
+      next(error);
+    }
   }
 );
+
 router.get(
   "/api/get-signature/video",
   requireAuth,
-  (req: Request, res: Response<ISignatureResponse>, next: NextFunction) => {
-    const timestamp = Math.round(Date.now() / 1000);
-    const signature = cloudinary.utils.api_sign_request(
-      { timestamp, upload_preset: "videos_preset", tags: "temporary,draft" },
-      process.env.CLOUDINARY_API_SECRET as string
-    );
-    // cloudinary.api.delete_resources_by_tag("temporary,draft");
-    // cloudinary.v2.uploader.remove_tag('temporary', ['public_id1', 'public_id2']);
-    res.json({
-      timestamp,
-      signature,
-      apiKey: process.env.CLOUDINARY_API_KEY as string,
-    });
+  (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (
+        !process.env.CLOUDINARY_API_SECRET ||
+        !process.env.CLOUDINARY_API_KEY
+      ) {
+        throw new Error("Cloudinary environment variables are missing.");
+      }
+
+      const { timestamp, signature } = getSignature("videos_preset", {
+        tags: "temporary,draft",
+      });
+
+      res.json({
+        timestamp,
+        signature,
+        apiKey: process.env.CLOUDINARY_API_KEY,
+      });
+    } catch (error) {
+      next(error);
+    }
   }
 );
+router.delete(
+  "/api/delete/:type(video|image)/:publicId",
+  requireAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { type, publicId } = req.params;
+
+    if (!publicId || typeof publicId !== "string") {
+      return next(new BadRequestError("Invalid public ID."));
+    }
+    if (!["image", "video"].includes(type)) {
+      return next(new BadRequestError("Invalid resource type."));
+    }
+
+    try {
+      const result = await cloudinary.uploader.destroy(publicId, {
+        resource_type: type,
+      });
+
+      if (result.result === "ok") {
+        res.status(200).json({ message: `${type} deleted successfully.` });
+        return;
+      } else if (result.result === "not found") {
+        return next(new NotFoundError());
+      } else {
+        return next(new BadRequestError(`Failed to delete ${type}.`));
+      }
+    } catch (error) {
+      return next(new BadRequestError("Internal server error."));
+    }
+  }
+);
+
 export { router as cloudRouters };

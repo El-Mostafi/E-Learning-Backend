@@ -53,6 +53,7 @@ export interface courseDataDetails extends courseDataGenerale {
 }
 
 export interface courseData extends courseDataDetails {
+  imgPublicId?: string;
   description: string;
   sections: SectionData[];
   certifications: number;
@@ -61,4 +62,43 @@ export interface courseData extends courseDataDetails {
   completedAt?: Date | null;
   startedAt?: Date;
   isUserEnrolled: boolean;
+}
+
+interface QuizQuestion {
+  id: string;
+  question: string;
+  options: {
+    A: string;
+    B: string;
+    C: string;
+    D: string;
+  };
+  correctAnswer: "A" | "B" | "C" | "D";
+}
+interface Coupon {
+  code: string;
+  discountPercentage: number;
+  maxUses: number;
+  expiryDate: Date;
+}
+
+export interface courseToEdit {
+  id: string;
+  title: string;
+  description: string;
+  thumbnailPreview: string;
+  imgPublicId: string;
+  level: string;
+  language: string;
+  sections: SectionData[];
+  quizQuestions: QuizQuestion[];
+  pricing: {
+    price: number;
+    isFree: boolean;
+  };
+  oldPrice?: number;
+  category: {
+    name: string;
+  };
+  coupons?: Coupon[];
 }

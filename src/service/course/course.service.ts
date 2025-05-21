@@ -80,6 +80,22 @@ export class CourseService {
     return { success: true, course: this.transformCourse(course, enrollment) };
   }
 
+  async findOneByIdForUpdate(
+    userId: mongoose.Types.ObjectId,
+    courseId: string
+  ) {
+    const course = await Course.findById(courseId);
+
+    if (!course) {
+      return { success: false, message: "Course not Found" };
+    }
+    if (course.instructor.toString() !== userId.toString()) {
+      return { success: false, message: "Permission denied!" };
+    }
+
+    return { success: true, course: this.transformCourse(course, null) };
+  }
+
   async findPublishedCourses() {
     const courses = await Course.find({ isPublished: true }).populate(
       "instructor",
@@ -125,23 +141,18 @@ export class CourseService {
     if (!courses) {
       return { success: false, message: "No courses found" };
     }
-
-    const transformedCourses = courses.map(async (course: CourseDocument) => {
-      const enrollment: EnrollmentDocument | null = await Enrollment.findOne({
-        participant: userId,
-        course: course._id,
-      });
-      return this.transformCourse(course, enrollment);
-    });
-
-    return { success: true, courses: transformedCourses };
+    return {
+      success: true,
+      courses: courses.map(this.transformCourseGenerale),
+    };
   }
 
   async updateOneById(
     userId: mongoose.Types.ObjectId,
     courseId: string,
-    courseDto: CourseDto
+    courseDto: CourseDtoWithCoupons
   ) {
+    
     const course = await Course.findById(courseId);
     if (!course) {
       return { success: false, message: "Course not found" };
@@ -149,7 +160,8 @@ export class CourseService {
     if (course.instructor.toString() !== userId.toString()) {
       return { success: false, message: "Permission denied!" };
     }
-    const updatedCourse = await Course.findByIdAndUpdate(courseId, courseDto, {
+    const { coupons, ...courseData } = courseDto;
+    const updatedCourse = await Course.findByIdAndUpdate(courseId, courseData, {
       new: true,
     });
     if (!updatedCourse) {
@@ -158,6 +170,10 @@ export class CourseService {
         message: "Error while trying to update the course",
       };
     }
+    course.set('sections',[]);
+    course.set('quizQuestions',[]);
+    course.set('coupons', coupons);
+    await course.save();
     return { success: true, message: "Course updated successfully!" };
   }
 
@@ -295,6 +311,7 @@ export class CourseService {
     return {
       id: (course._id as mongoose.Types.ObjectId).toString(),
       title: course.title,
+      imgPublicId: course.imgPublicId,
       description: course.description,
       thumbnailPreview: course.thumbnailPreview,
       level: course.level,
