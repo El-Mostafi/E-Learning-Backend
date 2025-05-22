@@ -141,29 +141,29 @@ const couponSchema = new mongoose.Schema<Coupon>({
   },
 });
 
-export interface CourseDocument extends mongoose.Document {
-  title: string;
-  description: string;
-  thumbnailPreview: string;
-  imgPublicId: string;
-  level: string;
-  language: string;
-  pricing: {
-    price: number;
-    isFree: boolean;
-  };
-  oldPrice?: number;
-  category: Category;
-  reviews: mongoose.Types.DocumentArray<Review>;
-  sections: mongoose.Types.DocumentArray<Section>;
-  certificates: mongoose.Types.DocumentArray<Certificate>;
-  quizQuestions: mongoose.Types.DocumentArray<Exam>;
-  coupons: mongoose.Types.DocumentArray<Coupon>;
-  instructor: mongoose.Types.ObjectId;
-  students: mongoose.Types.ObjectId[];
-  isPublished: boolean;
-  createdAt: Date;
-}
+  export interface CourseDocument extends mongoose.Document {
+    title: string;
+    description: string;
+    thumbnailPreview: string;
+    imgPublicId: string;
+    level: string;
+    language: string;
+    pricing: {
+      price: number;
+      isFree: boolean;
+    };
+    oldPrice?: number;
+    category: Category;
+    reviews: mongoose.Types.DocumentArray<Review>;
+    sections: mongoose.Types.DocumentArray<Section>;
+    certificates: mongoose.Types.DocumentArray<Certificate>;
+    quizQuestions: mongoose.Types.DocumentArray<Exam>;
+    coupons: mongoose.Types.DocumentArray<Coupon>;
+    instructor: mongoose.Types.ObjectId;
+    students: mongoose.Types.ObjectId[];
+    isPublished: boolean;
+    createdAt: Date;
+  }
 
 interface CourseModel extends mongoose.Model<CourseDocument> {
   build(courseDto: CourseDto): CourseDocument;

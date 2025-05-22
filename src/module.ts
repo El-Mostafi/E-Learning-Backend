@@ -24,6 +24,8 @@ import { instructorRouters } from "../src/routers/instructor/instructor.routers"
 import "./service/course/cleanup.service";
 import { cartRouters } from "./routers/cart/cart.routers";
 import { reviewRouters } from "./routers/review/review.routers";
+import { popularityRouters } from "./routers/popularity/popularity.routers";
+import { trendingRouters } from "./routers/trending/trending.routers";
 
 export class AppModule {
   constructor(public app: Application) {
@@ -73,6 +75,8 @@ export class AppModule {
     this.app.use(instructorRouters);
     this.app.use(cartRouters);
     this.app.use(reviewRouters);
+    this.app.use(popularityRouters)
+    this.app.use(trendingRouters)
 
     this.app.all("*", (req, res, next) => {
       next(new NotFoundError());
