@@ -8,6 +8,7 @@ import {
   courseData,
   courseDataGenerale,
   courseInstructor,
+  courseToEdit,
 } from "../../../Helpers/course/course.data";
 import { Types } from "mongoose";
 import { BadRequestError } from "../../../common";
@@ -93,7 +94,7 @@ export class CourseService {
       return { success: false, message: "Permission denied!" };
     }
 
-    return { success: true, course: this.transformCourse(course, null) };
+    return { success: true, course: this.transformCourseToEdit(course) };
   }
 
   async findPublishedCourses() {
@@ -152,7 +153,6 @@ export class CourseService {
     courseId: string,
     courseDto: CourseDtoWithCoupons
   ) {
-    
     const course = await Course.findById(courseId);
     if (!course) {
       return { success: false, message: "Course not found" };
@@ -170,9 +170,9 @@ export class CourseService {
         message: "Error while trying to update the course",
       };
     }
-    course.set('sections',[]);
-    course.set('quizQuestions',[]);
-    course.set('coupons', coupons);
+    course.set("sections", []);
+    course.set("quizQuestions", []);
+    course.set("coupons", coupons);
     await course.save();
     return { success: true, message: "Course updated successfully!" };
   }
@@ -360,6 +360,46 @@ export class CourseService {
       isUserEnrolled: enrollment ? true : false,
     };
   }
+  private transformCourseToEdit(course: CourseDocument): courseToEdit {
+    return {
+      id: course.id.toString(),
+      title: course.title,
+      imgPublicId: course.imgPublicId,
+      description: course.description,
+      thumbnailPreview: course.thumbnailPreview,
+      category: {
+        name: course.category.name,
+      },
+      level: course.level,
+      language: course.language,
+      sections: course.sections.map((section) => ({
+        id: section.id.toString(),
+        title: section.title,
+        description: section.description,
+        orderIndex: section.orderIndex,
+        lectures: section.lectures.map((lecture) => ({
+          id: lecture.id.toString(),
+          title: lecture.title,
+          description: lecture.description,
+          duration: lecture.duration,
+          videoUrl: lecture.videoUrl,
+          publicId: lecture.publicId,
+        })),
+      })),
+      quizQuestions: course.quizQuestions.map((question) => ({
+        id: question.id.toString(),
+        question: question.question,
+        options: question.options,
+        correctAnswer: question.correctAnswer,
+      })),
+      pricing: {
+        price: course.pricing.price,
+        isFree: course.pricing.isFree,
+      },
+      oldPrice: course.oldPrice,
+      coupons: course.coupons,
+    };
+  }
 
   private transformInstructor(course: CourseDocument): courseInstructor {
     const totalRating = course.reviews.reduce(
@@ -502,6 +542,7 @@ export class CourseService {
       isUserEnrolled: enrollment ? true : false,
     };
   }
+  
 }
 
 export const courseService = new CourseService();
