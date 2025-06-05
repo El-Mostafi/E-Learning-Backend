@@ -1,6 +1,13 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { v2 as cloudinary } from "cloudinary";
-import { BadRequestError, NotFoundError, requireAuth } from "../../../common";
+import {
+  BadRequestError,
+  currentUser,
+  requireAuth,
+  
+} from "../../../common";
+import { requireOwnership } from "../../../common/src/middllewares/require-ownership";
+
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -77,6 +84,8 @@ router.get(
 router.delete(
   "/api/delete/:type(video|image)/:publicId",
   requireAuth,
+  currentUser,
+  requireOwnership,
   async (req: Request, res: Response, next: NextFunction) => {
     const { type, publicId } = req.params;
 
@@ -92,14 +101,17 @@ router.delete(
         resource_type: type,
       });
 
-      if (result.result === "ok") {
-        res.status(200).json({ message: `${type} deleted successfully.` });
+      if (result.result === "ok" || result.result === "not found") {
+        res.status(200).json({
+          message:
+            result.result === "ok"
+              ? `${type} deleted successfully.`
+              : `${type} already deleted from Cloudinary.`,
+        });
         return;
-      } else if (result.result === "not found") {
-        return next(new NotFoundError());
-      } else {
-        return next(new BadRequestError(`Failed to delete ${type}.`));
       }
+
+      return next(new BadRequestError(`Failed to delete ${type}.`));
     } catch (error) {
       return next(new BadRequestError("Internal server error."));
     }
