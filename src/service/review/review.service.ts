@@ -49,11 +49,20 @@ export class ReviewService {
       const courseReview = course.reviews.find(
         (review) => review.userName === participant.userName
       );
-
       if (courseReview) {
         courseReview.rating = rating;
         courseReview.text = text;
         courseReview.createdAt = new Date();
+      }else{
+        let review: createReview = {
+          userName: participant.userName,
+          userImg: participant.profileImg,
+          text: text,
+          rating: rating,
+          createdAt: new Date(),
+        };
+        const courseReview = Review.build(review);
+        course.reviews.push(courseReview);
       }
     } else {
       // Create the review
