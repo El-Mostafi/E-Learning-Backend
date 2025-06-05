@@ -14,6 +14,8 @@ export interface EnrollmentDocument extends mongoose.Document {
   completed: boolean;
   completedAt: Date | null;
   startedAt: Date;
+  hasPassedQuizze: boolean;
+  QuizzeScore: number;
 }
 
 export interface EnrollmentModel extends mongoose.Model<EnrollmentDocument> {
@@ -67,6 +69,14 @@ const enrollmentSchema = new mongoose.Schema<EnrollmentDocument>({
   startedAt: {
     type: Date,
     default: Date.now,
+  },
+  hasPassedQuizze: {
+    type: Boolean,
+    default: false,
+  },
+  QuizzeScore: {
+    type: Number,
+    default: 0,
   },
 });
 

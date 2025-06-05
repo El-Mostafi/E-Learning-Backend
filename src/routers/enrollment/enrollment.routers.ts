@@ -60,7 +60,7 @@ router.get(
       if (!result.success) {
         return next(new BadRequestError(result.message!));
       }
-      res.status(200).send(result.enrollment!);
+      res.status(200).send(result.enrollment! );
     } catch (error: any) {
       next(error);
     }
@@ -104,6 +104,33 @@ router.delete(
       }
       res.status(200).send(result.message);
     } catch (error: any) {
+      next(error);
+    }
+  }
+);
+router.put(
+  "/api/my-courses/enrolled/:courseId/quiz-pass",
+  requireAuth,
+  currentUser,
+  roleIsStudent,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const courseId = new mongoose.Types.ObjectId(req.params.courseId);
+      const userId = req.currentUser!.userId;
+      const { score } = req.body;
+
+      if (typeof score !== "number" || score < 0) {
+        return next(new BadRequestError("Invalid score provided"));
+      }
+
+      const result = await enrollmentService.markQuizPassed(courseId, userId, score);
+
+      if (!result.success) {
+        return next(new BadRequestError(result.message!));
+      }
+
+      res.status(200).send(result.enrollment);
+    } catch (error) {
       next(error);
     }
   }

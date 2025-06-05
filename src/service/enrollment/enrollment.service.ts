@@ -1,9 +1,10 @@
 import User from "../../models/user";
 import Course, { CourseDocument, Lecture, Section } from "../../models/course";
-import mongoose from "mongoose";
+import mongoose, { now } from "mongoose";
 import Enrollment, { EnrollmentDocument } from "../../models/enrollment";
-import { courseData } from "Helpers/course/course.data";
+import { courseData, courseStudent } from "Helpers/course/course.data";
 import { ClientSession } from "mongoose";
+import { EnrollmentInterface } from "src/routers/enrollment/dtos/enrollement.dto";
 
 export class EnrollmentService {
   constructor() {}
@@ -59,34 +60,24 @@ export class EnrollmentService {
   }
 
   async findAll(userId: mongoose.Types.ObjectId) {
-    const enrollments = await Enrollment.find({ participant: userId }).populate(
-      {
-        path: "course",
-        populate: {
-          path: "instructor",
-          select: "userName profileImg",
-          model: "User",
-        },
-      }
-    );
+    const enrollments = await Enrollment.find({ participant: userId });
 
-    if (!enrollments) {
+    if (enrollments.length === 0) {
       return { success: false, message: "No enrollment found" };
     }
 
-    const transformedCourses = await Promise.all(
-      enrollments.map(async (enrollment: EnrollmentDocument) => {
-        const course: CourseDocument | null = await Course.findOne({
-          _id: enrollment.course,
-          students: { $in: [userId] },
-        });
-        if (!course) {
-          throw new Error("Course not found for the given user.");
-        }
-        return this.transformCourse(course, enrollment);
-      })
-    );
-
+    const transformedCourses = (
+      await Promise.all(
+        enrollments.map(async (enrollment) => {
+          const course = await Course.findById(enrollment.course).populate(
+            "instructor",
+            ["userName", "profileImg"]
+          );
+          if (!course) return null;
+          return this.transformCourseGenerale(course, enrollment);
+        })
+      )
+    ).filter((course): course is courseStudent => course !== null);
     return {
       success: true,
       courses: transformedCourses,
@@ -94,7 +85,7 @@ export class EnrollmentService {
   }
 
   async findOneById(userId: mongoose.Types.ObjectId, courseId: string) {
-    const enrollment = await Enrollment.findOne({
+    const enrollment: EnrollmentInterface | null = await Enrollment.findOne({
       course: courseId,
       participant: userId,
     });
@@ -102,6 +93,28 @@ export class EnrollmentService {
       return { success: false, message: "Participant is not enrolled" };
     }
     return { success: true, enrollment: enrollment };
+  }
+
+  async markQuizPassed(
+    courseId: mongoose.Types.ObjectId,
+    participantId: mongoose.Types.ObjectId,
+    score: number
+  ) {
+    const enrollment = await Enrollment.findOne({
+      course: courseId,
+      participant: participantId,
+    });
+
+    if (!enrollment) {
+      return { success: false, message: "Enrollment not found" };
+    }
+
+    enrollment.hasPassedQuizze = true;
+    enrollment.QuizzeScore = score;
+
+    await enrollment.save();
+
+    return { success: true, enrollment };
   }
 
   async updateProgress(
@@ -232,10 +245,10 @@ export class EnrollmentService {
     return { success: true, message: "Course withdrawn successfully!!" };
   }
 
-  private transformCourse(
+  private transformCourseGenerale(
     course: CourseDocument,
-    enrollment: EnrollmentDocument | null
-  ): courseData {
+    enrollment: EnrollmentDocument
+  ): courseStudent {
     const totalRating = course.reviews.reduce(
       (sum, review) => sum + review.rating,
       0
@@ -243,14 +256,6 @@ export class EnrollmentService {
     const averageRating = course.reviews.length
       ? totalRating / course.reviews.length
       : 0;
-    const ratingsCount = [0, 0, 0, 0, 0];
-
-    course.reviews.forEach((review) => {
-      const rating = review.rating;
-      if (rating >= 1 && rating <= 5) {
-        ratingsCount[rating - 1]++;
-      }
-    });
     const totaleDuration = course.sections.reduce(
       (total: number, section: Section) => {
         return (
@@ -262,54 +267,31 @@ export class EnrollmentService {
       },
       0
     );
-
+    const lectureCount = course.sections.reduce(
+      (total, section) => total + section.lectures.length,
+      0
+    );
     return {
       id: (course._id as mongoose.Types.ObjectId).toString(),
       title: course.title,
       description: course.description,
-      thumbnailPreview: course.thumbnailPreview,
-      level: course.level,
       language: course.language,
+      thumbnailPreview: course.thumbnailPreview,
       category: course.category.name,
-      price: !course.pricing.isFree ? course.pricing.price : 0,
+      level: course.level,
+      price: course.pricing.price,
       reviews: averageRating,
-      reviewsLenght: course.reviews.length,
-      ratingsCount: ratingsCount,
-      feedbacks: course.reviews.map((review) => ({
-        rating: review.rating,
-        comment: review.text,
-        userName: review.userName,
-        userImg: review.userImg,
-        createdAt: review.createdAt,
-      })),
-      sections: course.sections.map((section: Section) => ({
-        id: (section._id as mongoose.Types.ObjectId).toString(),
-        title: section.title,
-        description: section.description,
-        orderIndex: section.orderIndex,
-        isPreview: section.isPreview,
-        lectures: section.lectures.map((lecture: Lecture) => ({
-          id: (lecture._id as mongoose.Types.ObjectId).toString(),
-          title: lecture.title,
-          description: lecture.description,
-          duration: lecture.duration,
-          isPreview: lecture.isPreview,
-          videoUrl: enrollment ? lecture.videoUrl : "",
-          publicId: enrollment ? lecture.publicId : undefined,
-        })),
-      })),
-      certifications: course.certificates.length,
+      duration: totaleDuration,
       students: course.students.length,
       instructorName: (course.instructor as any).userName,
       instructorImg: (course.instructor as any).profileImg,
-      progress: enrollment ? enrollment.progress : undefined,
-      completed: enrollment ? enrollment.completed : undefined,
-      completedAt: enrollment ? enrollment.completedAt : undefined,
-      startedAt: enrollment ? enrollment.startedAt : undefined,
-      duration: totaleDuration,
       createdAt: course.createdAt,
-      InstructorId: course.instructor.toString(),
-      isUserEnrolled: enrollment ? true : false,
+      lectureTotal: lectureCount,
+      completedSections: enrollment.completedSections.length,
+      completed: enrollment.completed,
+      completedAt: enrollment.completedAt,
+      startedAt: enrollment.startedAt,
+      progress: enrollment.progress,
     };
   }
 }
