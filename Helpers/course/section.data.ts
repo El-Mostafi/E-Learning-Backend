@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-interface SectionData {
+interface SectionDataV {
   id: string;
   title: string;
   orderIndex: number;
@@ -16,4 +16,4 @@ interface LectureData {
   publicId: string;
 }
 
-export default SectionData;
+export default SectionDataV;

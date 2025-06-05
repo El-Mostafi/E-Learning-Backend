@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { Category } from "../../src/models/schemas/category";
 import { Review } from "../../src/models/schemas/review";
+import SectionDataV from "./section.data";
 
 interface SectionData {
   id: string;
@@ -37,6 +38,17 @@ export interface courseDataGenerale extends courseInstructor {
   price: number;
   duration: number;
   InstructorId: string;
+}
+export interface courseStudent extends courseInstructor{
+  completedSections: number;
+  lectureTotal: number; 
+  description: string;
+  price: number;
+  duration: number;
+  progress: number;
+  completed: boolean;
+  completedAt: Date | null;
+  startedAt: Date;
 }
 export interface courseDataDetails extends courseDataGenerale {
   reviewsLenght: number;
@@ -90,7 +102,7 @@ export interface courseToEdit {
   imgPublicId: string;
   level: string;
   language: string;
-  sections: SectionData[];
+  sections: SectionDataV[];
   quizQuestions: QuizQuestion[];
   pricing: {
     price: number;
