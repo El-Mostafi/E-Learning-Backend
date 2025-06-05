@@ -74,6 +74,7 @@ export interface courseData extends courseDataDetails {
   completedAt?: Date | null;
   startedAt?: Date;
   isUserEnrolled: boolean;
+  appliedCoupon?: { code: string; discountPercentage: number }
 }
 
 interface QuizQuestion {
