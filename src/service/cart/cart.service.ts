@@ -215,8 +215,10 @@ export class CartService {
       { new: true, session }
     );
 
-    if (!user) throw new BadRequestError("User not found");
-    return user.cart;
+    if (!user) {
+      return { success: false, message: "User not found" };
+    }
+    return { success: true, message: "Cart cleared successfully" };
   }
 }
 

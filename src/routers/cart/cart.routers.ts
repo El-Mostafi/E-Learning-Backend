@@ -79,20 +79,25 @@ router.post(
   }
 );
 
-// router.delete(
-//   "/api/cart/clear",
-//   requireAuth,
-//   currentUser,
-//   async (req: Request, res: Response, next: NextFunction) => {
-//     try {
-//       const cart = await cartService.clearCart(
-//         new mongoose.Types.ObjectId(req.currentUser!.userId)
-//       );
-//       res.status(200).json(cart);
-//     } catch (error) {
-//       next(error);
-//     }
-//   }
-// );
+router.delete(
+  "/api/cart/clear",
+  requireAuth,
+  currentUser,
+  async (req: Request, res: Response, next: NextFunction) => {
+    const session = await mongoose.startSession();
+    try {
+      const result = await cartService.clearCart(
+        new mongoose.Types.ObjectId(req.currentUser!.userId),
+        session
+      );
+      if(!result.success) {
+        return next( new BadRequestError(result.message));
+      }
+      res.status(200).json(result.message);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 export { router as cartRouters };
