@@ -23,11 +23,24 @@ router.get(
   "/api/courses",
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const result = await courseService.findPublishedCourses();
-      if (!result.success) {
-        return next(new BadRequestError(result.message!));
+      const page = parseInt(req.query.currentPage as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 9;
+      const sortOption = req.query.sortOption as string;
+      const filterParams = req.query.filterParams as any;
+
+      if (filterParams?.ratings) {
+        filterParams.ratings = filterParams.ratings.map((rating: string) => parseInt(rating));
       }
-      res.status(200).send(result.courses!);
+
+      
+
+      const result = await courseService.findPublishedCourses(
+        page,
+        limit,
+        sortOption,
+        filterParams
+      );
+      res.status(200).send(result);
     } catch (error) {
       next(error);
     }
@@ -78,11 +91,14 @@ router.get(
     try {
       const categoryId = req.params.categoryId;
       const userId = req.currentUser?.userId;
-      const result = await courseService.findAllByCategoryId(categoryId, userId);
-      if (!result.success){
+      const result = await courseService.findAllByCategoryId(
+        categoryId,
+        userId
+      );
+      if (!result.success) {
         return next(new BadRequestError(result.message!));
       }
-      res.send(result.courses)
+      res.send(result.courses);
     } catch (error) {
       next(error);
     }
@@ -175,7 +191,7 @@ router.post(
 router.put(
   "/api/courses/:id/update-course",
   [
-  body("title").not().isEmpty().withMessage("Please enter a title"),
+    body("title").not().isEmpty().withMessage("Please enter a title"),
     body("description")
       .not()
       .isEmpty()
@@ -231,7 +247,7 @@ router.put(
       }
       res.status(201).send({
         message: result.message,
-        success: result.success
+        success: result.success,
       });
     } catch (error) {
       next(error);
@@ -302,6 +318,18 @@ router.delete(
         return next(new BadRequestError(result.message));
       }
       res.status(200).send(result.message);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+router.get(
+  "/api/categories",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const filteringData = await courseService.getCoursesFilteringData();
+      res.status(200).send(filteringData);
     } catch (error) {
       next(error);
     }

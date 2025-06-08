@@ -13,6 +13,8 @@ import {
 import { Types } from "mongoose";
 import { BadRequestError } from "../../../common";
 import Enrollment, { EnrollmentDocument } from "../../models/enrollment";
+import { PopularityService } from "../popularity/popularity.service";
+import User from "../../models/user";
 
 export class CourseService {
   constructor() {}
@@ -97,19 +99,221 @@ export class CourseService {
     return { success: true, course: this.transformCourseToEdit(course) };
   }
 
-  async findPublishedCourses() {
-    const courses = await Course.find({ isPublished: true }).populate(
-      "instructor",
-      ["id", "userName", "profileImg", "AboutMe", "speciality"]
-    );
-    if (!courses) {
-      return { success: false, message: "No published courses found" };
+  async findPublishedCourses(
+    page: number,
+    limit: number,
+    sortOption?: string,
+    filterParams?: {
+      ratings?: number[] | undefined;
+      instructors?: string[] | undefined;
+      price?: string | undefined;
+      levels?: string[] | undefined;
+      categories?: string[] | undefined;
+      search?: string | undefined;
+    }
+  ) {
+    console.log(filterParams);
+    let sort: any = { createdAt: -1 };
+    if (sortOption === "rating") {
+      console.log("Sorting by rating");
+      sort = { averageRating: -1 };
+    }
+    if (sortOption === "enrollmentCount") {
+      console.log("Sorting by enrollment count");
+      sort = { enrollmentCount: -1 };
+    }
+    if (sortOption === "popularity") {
+      console.log("Sorting by popularity");
+      const popularityService = new PopularityService();
+      const popularityResult = await popularityService.getPopularCourses(
+        3.0,
+        page,
+        limit
+      );
+      return {
+        courses: popularityResult.data,
+        totalCount: popularityResult.totalCount,
+      };
     }
 
+    const skip = (page - 1) * limit;
+
+    const initialMatch: any = { isPublished: true };
+    let filterByAverageRating =
+      filterParams &&
+      filterParams.ratings &&
+      Array.isArray(filterParams.ratings);
+
+    let filterByLevels =
+      filterParams && filterParams.levels && Array.isArray(filterParams.levels);
+
+    let filterByPrice = filterParams && filterParams.price;
+
+    let filterByCategories =
+      filterParams &&
+      filterParams.categories &&
+      Array.isArray(filterParams.categories);
+
+    let keywordSearch = filterParams && filterParams.search;
+    // Build keyword search filter if needed
+    let keywordMatch: any = {};
+    if (keywordSearch && typeof filterParams!.search === "string" && filterParams!.search.trim() !== "") {
+      const searchRegex = new RegExp(filterParams!.search.trim(), "i");
+      keywordMatch = {
+      $or: [
+        { title: searchRegex },
+        { description: searchRegex },
+        { "category.name": searchRegex },
+      ],
+      };
+    }
+
+ 
+    let filterByInstructors =
+      filterParams &&
+      filterParams.instructors &&
+      Array.isArray(filterParams.instructors);
+
+    let instructorObjectIds: mongoose.Types.ObjectId[] = [];
+    if (filterByInstructors) {
+      instructorObjectIds = filterParams!.instructors!.map(
+        (id: string) => new mongoose.Types.ObjectId(id)
+      );
+    }
+
+    const aggregationResult = await Course.aggregate([
+      { $match: initialMatch },
+
+      {
+        $addFields: {
+          enrollmentCount: { $size: "$students" },
+          averageRating: {
+            $cond: [
+              { $eq: [{ $size: "$reviews" }, 0] },
+              0,
+              { $avg: "$reviews.rating" },
+            ],
+          },
+        },
+      },
+
+      filterByAverageRating
+        ? {
+            $match: {
+              averageRating: { $in: filterParams!.ratings },
+            },
+          }
+        : { $match: {} },
+
+      filterByLevels
+        ? {
+            $match: {
+              level: { $in: filterParams!.levels },
+            },
+          }
+        : { $match: {} },
+
+      filterByCategories
+        ? {
+            $match: {
+              "category.name": { $in: filterParams!.categories },
+            },
+          }
+        : { $match: {} },
+
+      filterByPrice
+        ? {
+            $match: {
+              "pricing.isFree": filterParams!.price === "Free"
+            },
+          }
+        : { $match: {} },
+
+      filterByInstructors
+        ? {
+            $match: {
+              instructor: { $in: instructorObjectIds },
+            },
+          }
+        : { $match: {} },
+
+      // Keyword search match
+      Object.keys(keywordMatch).length > 0 ? { $match: keywordMatch } : { $match: {} },
+        
+      {
+        $facet: {
+          paginatedResults: [
+            { $sort: sort },
+            { $skip: skip },
+            { $limit: limit },
+            {
+              $lookup: {
+                from: "users",
+                let: { instructorId: "$instructor" },
+                pipeline: [
+                  {
+                    $match: {
+                      $expr: {
+                        $and: [
+                          { $eq: ["$_id", "$$instructorId"] },
+                          { $eq: ["$role", "instructor"] },
+                        ],
+                      },
+                    },
+                  },
+                ],
+                as: "instructorDetails",
+              },
+            },
+            // Add instructor field with proper fallback
+            {
+              $addFields: {
+                instructor: {
+                  $cond: [
+                    { $gt: [{ $size: "$instructorDetails" }, 0] },
+                    { $arrayElemAt: ["$instructorDetails", 0] },
+                    null,
+                  ],
+                },
+              },
+            },
+          ],
+          totalCount: [{ $count: "count" }],
+        },
+      },
+      {
+        $project: {
+          data: "$paginatedResults",
+          totalCount: { $arrayElemAt: ["$totalCount.count", 0] },
+        },
+      },
+    ]);
+
+    const result = aggregationResult[0] || { data: [], totalCount: 0 };
+
+    const transformedCourses = await Promise.all(
+      (result.data || []).map(async (course: CourseDocument) => {
+        return this.transformCourseGenerale(course);
+      })
+    );
+
     return {
-      success: true,
-      courses: courses.map((course) => this.transformCourseGenerale(course)),
+      courses: transformedCourses,
+      totalCount: result.totalCount || 0,
     };
+
+    // const courses = await Course.find({ isPublished: true }).populate(
+    //   "instructor",
+    //   ["id", "userName", "profileImg", "AboutMe", "speciality"]
+    // );
+    // if (!courses) {
+    //   return { success: false, message: "No published courses found" };
+    // }
+
+    // return {
+    //   success: true,
+    //   courses: courses.map((course) => this.transformCourseGenerale(course)),
+    // };
   }
 
   async findAllByInstructorId(instructorId: mongoose.Types.ObjectId) {
@@ -237,6 +441,37 @@ export class CourseService {
       };
     }
     return { success: true, message: "Course unpublished successfully" };
+  }
+
+  async getCoursesFilteringData() {
+    const categories = await Course.distinct("category.name");
+    const levels = await Course.distinct("level");
+    // _id is always included by default in Mongoose/MongoDB queries unless explicitly excluded
+    const instructors = await User.find(
+      { role: "instructor" },
+      { userName: 1 }
+    ).lean();
+
+    if (!categories || categories.length === 0) {
+      throw new BadRequestError("No categories found");
+    }
+
+    if (!levels || levels.length === 0) {
+      throw new BadRequestError("No levels found");
+    }
+
+    if (!instructors || instructors.length === 0) {
+      throw new BadRequestError("No instructors found");
+    }
+
+    return {
+      categories,
+      levels,
+      instructors: instructors.map((inst: any) => ({
+        userName: inst.userName,
+        id: inst._id.toString(),
+      })),
+    };
   }
 
   async verifyCoupon(courseId: string, couponCode: string) {
@@ -542,7 +777,6 @@ export class CourseService {
       isUserEnrolled: enrollment ? true : false,
     };
   }
-  
 }
 
 export const courseService = new CourseService();

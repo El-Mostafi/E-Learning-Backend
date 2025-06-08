@@ -5,7 +5,7 @@ import Course, { CourseDocument, Lecture, Section } from "../../models/course";
 export class TrendingService {
   constructor() {}
 
-  async getHybridTrending(limit = 10, page: number, category?: string) {
+  async getHybridTrending(limit = 10, page: number, category?: string, pagination?: boolean) {
     const now = new Date();
 
     const skip = (page - 1) * limit;
@@ -180,7 +180,7 @@ export class TrendingService {
 
     return {
       data: transformedCourses,
-      totalCount: result.totalCount || 0,
+      totalCount: pagination? result.totalCount: transformedCourses.length || 0,
     };
   }
 

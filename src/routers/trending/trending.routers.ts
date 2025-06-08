@@ -8,7 +8,7 @@ router.get(
   "/api/trending-courses",
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const limit = parseInt(req.query.limit as string) || 10;
+      const limit = parseInt(req.query.limit as string) || 8;
       const page = parseInt(req.query.page as string) || 1;
       const category = (req.query.category as string) || undefined;
       console.log(category);

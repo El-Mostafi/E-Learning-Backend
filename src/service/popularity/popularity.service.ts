@@ -8,9 +8,13 @@ export class PopularityService {
   async getPopularCourses(
     minRating = 3.0,
     page = 1,
-    limit = 10,
-    category?: string
+    limit = 8,
+    category?: string,
+    pagination?: boolean
   ) {
+
+
+
     const skip = (page - 1) * limit;
     
     console.log('Input parameters:', { minRating, page, limit, category });
@@ -141,7 +145,7 @@ export class PopularityService {
       
       return {
         data: transformedCourses,
-        totalCount: result.totalCount || 0,
+        totalCount: pagination? result.totalCount: transformedCourses.length || 0,
       };
       
     } catch (error) {
