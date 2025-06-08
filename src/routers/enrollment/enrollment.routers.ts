@@ -7,25 +7,30 @@ import { roleIsStudent } from "../../../common/src/middllewares/validate-roles";
 const router = Router();
 const enrollmentService = new EnrollmentService();
 
-// router.post(
-//   "/api/courses/:courseId/enroll",
-//   requireAuth,
-//   currentUser,
-//   roleIsStudent,
-//   async (req: Request, res: Response, next: NextFunction) => {
-//     try {
-//       const userId = req.currentUser!.userId;
-//       const courseId = new mongoose.Types.ObjectId(req.params.courseId);
-//       const result = await enrollmentService.enroll(courseId, userId);
-//       if (!result.success) {
-//         return next(new BadRequestError(result.message!));
-//       }
-//       res.status(200).send(result.message!);
-//     } catch (error: any) {
-//       next(error);
-//     }
-//   }
-// );
+router.post(
+  "/api/courses/:courseId/enroll",
+  requireAuth,
+  currentUser,
+  roleIsStudent,
+  async (req: Request, res: Response, next: NextFunction) => {
+    const session = await mongoose.startSession();
+    try {
+      await session.withTransaction(async () => {
+        const userId = req.currentUser!.userId;
+        const courseId = new mongoose.Types.ObjectId(req.params.courseId);
+        const result = await enrollmentService.enroll(courseId, userId, session);
+        if (!result.success) {
+          throw new BadRequestError(result.message!);
+        }
+        res.status(200).send(result.message!);
+      });
+    } catch (error: any) {
+      next(error);
+    } finally {
+      await session.endSession();
+    }
+  }
+);
 
 router.get(
   "/api/my-courses/enrolled",

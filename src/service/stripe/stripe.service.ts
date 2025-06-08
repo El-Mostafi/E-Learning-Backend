@@ -15,26 +15,39 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 export class StripeService {
   constructor() {}
 
-  async createPaymentIntent(userId: mongoose.Types.ObjectId) {
-    const cart = await cartService.getCart(userId);
+   async createPaymentIntent(userId: mongoose.Types.ObjectId) {
+    const session = await mongoose.startSession();
+    
+    try {
+      return await session.withTransaction(async () => {
+        const cart = await cartService.getCart(userId);
 
-    if (!cart) {
-      throw new BadRequestError("User Not Found or Cart is Empty!");
+        if (!cart || cart.courses.length === 0) {
+          return{success: false, message: "User Not Found or Cart is Empty!"  }  ;
+        }
+
+        const amount = Math.round(cart.total * 100);
+        const currency = "usd";
+        const courseIds = cart.courses.map((c) => c._id);
+
+        // Create Stripe Payment Intent
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount,
+          currency,
+          automatic_payment_methods: { enabled: true },
+          metadata: {
+            userId: userId.toString(),
+            courseIds: courseIds.join(","),
+          },
+        });
+
+        
+
+        return {success: true, paymentIntent: paymentIntent};
+      });
+    } finally {
+      session.endSession();
     }
-    const amount = Math.round(cart.total * 100);
-    const currency = "usd";
-
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount,
-      currency,
-      automatic_payment_methods: { enabled: true },
-      metadata: {
-        userId: userId.toString(),
-        courseIds: cart.courses.map((c) => c._id).join(","),
-      },
-    });
-
-    return paymentIntent;
   }
 
   async handleStripeWebhook(event: Stripe.Event) {

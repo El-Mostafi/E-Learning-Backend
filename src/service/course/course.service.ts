@@ -13,7 +13,11 @@ import {
 import { Types } from "mongoose";
 import { BadRequestError } from "../../../common";
 import Enrollment, { EnrollmentDocument } from "../../models/enrollment";
+<<<<<<< HEAD
 import { PopularityService } from "../popularity/popularity.service";
+=======
+import { CartItem } from "../../models/cartItem";
+>>>>>>> 7f1c351fb08c6368b336fcbc9aacc7cb0ae4beee
 import User from "../../models/user";
 
 export class CourseService {
@@ -52,7 +56,7 @@ export class CourseService {
           participant: userId,
           course: course._id,
         });
-        return this.transformCourse(course, enrollment);
+        return this.transformCourse(course, enrollment, null);
       })
     );
 
@@ -79,8 +83,27 @@ export class CourseService {
       participant: userId,
       course: courseId,
     });
+    const user = await User.findById(userId).select("cart").lean();
 
-    return { success: true, course: this.transformCourse(course, enrollment) };
+    if (!user) {
+      return { success: false, message: "User not found" };
+    }
+
+    const cartItem = user.cart.find(
+      (item: CartItem) => item.course.toString() === courseId
+    );
+
+    if (!cartItem) {
+      return {
+      success: true,
+      course: this.transformCourse(course, enrollment, null),
+    };
+    }
+
+    return {
+      success: true,
+      course: this.transformCourse(course, enrollment, cartItem.appliedCoupon===undefined?null:cartItem.appliedCoupon),
+    };
   }
 
   async findOneByIdForUpdate(
@@ -514,7 +537,8 @@ export class CourseService {
 
   private transformCourse(
     course: CourseDocument,
-    enrollment: EnrollmentDocument | null
+    enrollment: EnrollmentDocument | null,
+    appliedCoupon: { code: string; discountPercentage: number } | null
   ): courseData {
     const totalRating = course.reviews.reduce(
       (sum, review) => sum + review.rating,
@@ -593,6 +617,7 @@ export class CourseService {
       instructorExpertise: (course.instructor as any).expertise,
       instructorBiography: (course.instructor as any).biography,
       isUserEnrolled: enrollment ? true : false,
+      appliedCoupon: appliedCoupon ?? undefined,
     };
   }
   private transformCourseToEdit(course: CourseDocument): courseToEdit {

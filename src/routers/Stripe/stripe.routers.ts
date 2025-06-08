@@ -21,7 +21,11 @@ router.post(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.currentUser!.userId;
-      const paymentIntent = await stripeService.createPaymentIntent(userId);
+      const result = await stripeService.createPaymentIntent(userId);
+      if (!result.success) {
+        return next(new BadRequestError(result.message!));
+      }
+      const paymentIntent = result.paymentIntent!;
       res.json({ clientSecret: paymentIntent.client_secret });
     } catch (err) {
       return next(new BadRequestError((err as Error).message));
