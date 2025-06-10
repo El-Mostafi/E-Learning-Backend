@@ -4,36 +4,82 @@ import Course, { CourseDocument, Lecture, Section } from "../../models/course";
 
 export class PopularityService {
   constructor() {}
-  
+
   async getPopularCourses(
     minRating = 3.0,
     page = 1,
     limit = 8,
     category?: string,
+    filterParams?: {
+      ratings?: number[] | undefined;
+      instructors?: string[] | undefined;
+      price?: string | undefined;
+      levels?: string[] | undefined;
+      categories?: string[] | undefined;
+      search?: string | undefined;
+    },
     pagination?: boolean
   ) {
 
+    let filterByLevels =
+      filterParams && filterParams.levels && Array.isArray(filterParams.levels);
 
+    let filterByPrice = filterParams && filterParams.price;
+
+    let filterByCategories =
+      filterParams &&
+      filterParams.categories &&
+      Array.isArray(filterParams.categories);
+
+    let keywordSearch = filterParams && filterParams.search;
+    // Build keyword search filter if needed
+    let keywordMatch: any = {};
+    if (
+      keywordSearch &&
+      typeof filterParams!.search === "string" &&
+      filterParams!.search.trim() !== ""
+    ) {
+      const searchRegex = new RegExp(filterParams!.search.trim(), "i");
+      keywordMatch = {
+        $or: [
+          { title: searchRegex },
+          { description: searchRegex },
+          { "category.name": searchRegex },
+        ],
+      };
+    }
+
+    let filterByInstructors =
+      filterParams &&
+      filterParams.instructors &&
+      Array.isArray(filterParams.instructors);
+
+    let instructorObjectIds: mongoose.Types.ObjectId[] = [];
+    if (filterByInstructors) {
+      instructorObjectIds = filterParams!.instructors!.map(
+        (id: string) => new mongoose.Types.ObjectId(id)
+      );
+    }
 
     const skip = (page - 1) * limit;
-    
-    console.log('Input parameters:', { minRating, page, limit, category });
-    
+
+    console.log("Input parameters:", { minRating, page, limit, category });
+
     try {
       // Build match conditions
       const initialMatch: any = { isPublished: true };
-      
+
       // Add category filter if specified and not "All"
       if (category && category !== undefined) {
         initialMatch["category.name"] = category;
       }
-      
-      console.log('Initial match conditions:', initialMatch);
-      
+
+      console.log("Initial match conditions:", initialMatch);
+
       const aggregationResult = await Course.aggregate([
         // Step 1: Match published courses and category if specified
         { $match: initialMatch },
-        
+
         // Step 2: Calculate enrollment count and average rating
         {
           $addFields: {
@@ -42,19 +88,56 @@ export class PopularityService {
               $cond: [
                 { $eq: [{ $size: "$reviews" }, 0] },
                 0,
-                { $avg: "$reviews.rating" }
+                { $avg: "$reviews.rating" },
               ],
             },
           },
         },
-        
+
+        filterByLevels
+          ? {
+              $match: {
+                level: { $in: filterParams!.levels },
+              },
+            }
+          : { $match: {} },
+
+        filterByCategories
+          ? {
+              $match: {
+                "category.name": { $in: filterParams!.categories },
+              },
+            }
+          : { $match: {} },
+
+        filterByPrice
+          ? {
+              $match: {
+                "pricing.isFree": filterParams!.price === "Free",
+              },
+            }
+          : { $match: {} },
+
+        filterByInstructors
+          ? {
+              $match: {
+                instructor: { $in: instructorObjectIds },
+              },
+            }
+          : { $match: {} },
+
+        // Keyword search match
+        Object.keys(keywordMatch).length > 0
+          ? { $match: keywordMatch }
+          : { $match: {} },
+
         // Step 3: Filter by minimum rating
-        { 
-          $match: { 
-            averageRating: { $gte: minRating } 
-          } 
+        {
+          $match: {
+            averageRating: { $gte: minRating },
+          },
         },
-        
+
         // Step 4: Use facet to get both paginated results and total count
         {
           $facet: {
@@ -63,31 +146,37 @@ export class PopularityService {
               { $sort: { enrollmentCount: -1, averageRating: -1 } },
               { $skip: skip },
               { $limit: limit },
-                // Lookup instructor details with role filter
-                {
+              // Lookup instructor details with role filter
+              {
                 $lookup: {
                   from: "users",
                   let: { instructorId: "$instructor" },
                   pipeline: [
-                  { $match: { $expr: { $and: [
-                    { $eq: ["$_id", "$$instructorId"] },
-                    { $eq: ["$role", "instructor"] }
-                  ] } } }
+                    {
+                      $match: {
+                        $expr: {
+                          $and: [
+                            { $eq: ["$_id", "$$instructorId"] },
+                            { $eq: ["$role", "instructor"] },
+                          ],
+                        },
+                      },
+                    },
                   ],
                   as: "instructorDetails",
                 },
-                },
+              },
               // Add instructor field with proper fallback
               {
                 $addFields: {
-                  instructor: { 
+                  instructor: {
                     $cond: [
                       { $gt: [{ $size: "$instructorDetails" }, 0] },
                       { $arrayElemAt: ["$instructorDetails", 0] },
-                      null
-                    ]
-                  }
-                }
+                      null,
+                    ],
+                  },
+                },
               },
               // Project the fields we need
               {
@@ -108,16 +197,14 @@ export class PopularityService {
                   enrollmentCount: 1,
                   averageRating: 1,
                   createdAt: 1,
-                  isPublished: 1
-                }
-              }
+                  isPublished: 1,
+                },
+              },
             ],
-            totalCount: [
-              { $count: "count" }
-            ],
+            totalCount: [{ $count: "count" }],
           },
         },
-        
+
         // Step 5: Format the final result
         {
           $project: {
@@ -126,69 +213,74 @@ export class PopularityService {
           },
         },
       ]);
-      
-      console.log('Aggregation completed, result length:', aggregationResult.length);
-      
+
+      console.log(
+        "Aggregation completed, result length:",
+        aggregationResult.length
+      );
+
       const result = aggregationResult[0] || { data: [], totalCount: 0 };
-      
-      console.log('Final result:', {
+
+      console.log("Final result:", {
         dataLength: result.data?.length || 0,
-        totalCount: result.totalCount || 0
+        totalCount: result.totalCount || 0,
       });
-      
+
       // Transform the courses to match your courseDataGenerale interface
       const transformedCourses = await Promise.all(
         (result.data || []).map(async (course: CourseDocument) => {
           return this.transformCourseGenerale(course);
         })
       );
-      
+
       return {
         data: transformedCourses,
-        totalCount: pagination? result.totalCount: transformedCourses.length || 0,
+        totalCount: pagination
+          ? result.totalCount
+          : transformedCourses.length || 0,
       };
-      
     } catch (error) {
-      console.error('Error in getPopularCourses:', error);
+      console.error("Error in getPopularCourses:", error);
       throw error;
     }
   }
-  
+
   private transformCourseGenerale(course: CourseDocument): courseDataGenerale {
-      const totalRating = course.reviews.reduce(
-        (sum, review) => sum + review.rating,
-        0
-      );
-      const averageRating = course.reviews.length
-        ? totalRating / course.reviews.length
-        : 0;
-      const totaleDuration = course.sections.reduce(
-        (total: number, section: Section) => {
-          return (
-            total +
-            section.lectures.reduce((sectionTotal: number, lecture: Lecture) => {
-              return sectionTotal + lecture.duration;
-            }, 0)
-          );
-        },
-        0
-      );
-      return {
-        id: (course._id as mongoose.Types.ObjectId).toString(),
-        title: course.title,
-        description: course.description,
-        language: course.language,
-        thumbnailPreview: course.thumbnailPreview,
-        category: course.category.name,
-        level: course.level,
-        price: course.pricing.price,
-        reviews: averageRating,
-        duration: totaleDuration,
-        students: course.students.length,
-        instructorName: (course.instructor as any).userName || "Unknown Instructor",
-        instructorImg: (course.instructor as any).profileImg || "",
-        InstructorId: (course.instructor as any).id || "",
-        createdAt: course.createdAt,
-      };
-    }
+    const totalRating = course.reviews.reduce(
+      (sum, review) => sum + review.rating,
+      0
+    );
+    const averageRating = course.reviews.length
+      ? totalRating / course.reviews.length
+      : 0;
+    const totaleDuration = course.sections.reduce(
+      (total: number, section: Section) => {
+        return (
+          total +
+          section.lectures.reduce((sectionTotal: number, lecture: Lecture) => {
+            return sectionTotal + lecture.duration;
+          }, 0)
+        );
+      },
+      0
+    );
+    return {
+      id: (course._id as mongoose.Types.ObjectId).toString(),
+      title: course.title,
+      description: course.description,
+      language: course.language,
+      thumbnailPreview: course.thumbnailPreview,
+      category: course.category.name,
+      level: course.level,
+      price: course.pricing.price,
+      reviews: averageRating,
+      duration: totaleDuration,
+      students: course.students.length,
+      instructorName:
+        (course.instructor as any).userName || "Unknown Instructor",
+      instructorImg: (course.instructor as any).profileImg || "",
+      InstructorId: (course.instructor as any).id || "",
+      createdAt: course.createdAt,
+    };
+  }
 }

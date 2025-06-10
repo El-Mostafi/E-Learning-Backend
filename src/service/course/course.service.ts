@@ -13,11 +13,8 @@ import {
 import { Types } from "mongoose";
 import { BadRequestError } from "../../../common";
 import Enrollment, { EnrollmentDocument } from "../../models/enrollment";
-<<<<<<< HEAD
 import { PopularityService } from "../popularity/popularity.service";
-=======
 import { CartItem } from "../../models/cartItem";
->>>>>>> 7f1c351fb08c6368b336fcbc9aacc7cb0ae4beee
 import User from "../../models/user";
 
 export class CourseService {
@@ -149,9 +146,12 @@ export class CourseService {
       console.log("Sorting by popularity");
       const popularityService = new PopularityService();
       const popularityResult = await popularityService.getPopularCourses(
-        3.0,
+        (filterParams?.ratings && filterParams.ratings.length > 0 ? Math.min(...filterParams.ratings) : 3.0),
         page,
-        limit
+        limit,
+        undefined,
+        filterParams,
+        true,
       );
       return {
         courses: popularityResult.data,
