@@ -323,7 +323,7 @@ router.put(
   deleteImageInCloud,
   async (req: Request, res: Response, next: NextFunction) => {
     const updateData: updateData = req.body;
-    if(updateData.profileImg && !updateData.publicId ){
+    if(updateData.profileImg && updateData.profileImg!==req.currentUser!.profileImg && !updateData.publicId ){
       return next(new BadRequestError("Profile image public id is required")); 
     }
     const userId = req.currentUser!.userId;
