@@ -9,19 +9,32 @@ export const deleteImageInCloud = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.currentUser!.userId;
+    let userId;
+    if (req.currentUser!.role === "admin") {
+      userId = req.params.id;
+    } else {
+      userId = req.currentUser!.userId;
+    }
     const user = await User.findById(userId);
     if (!user) {
-      return next(new BadRequestError("user not found for deleting the image from cloud!"));
+      return next(
+        new BadRequestError("user not found for deleting the image from cloud!")
+      );
     }
 
     const imgPublicId = user.publicId;
 
     if (imgPublicId) {
-      const result = await cloudinary.uploader.destroy(imgPublicId, {
-        resource_type: "image",
-      });
-      console.log(result);
+      try {
+        const imgResult = await cloudinary.uploader.destroy(imgPublicId, {
+          resource_type: "image",
+        });
+        if (imgResult.result === "not found") {
+          console.warn(`Image not found on Cloudinary: ${imgPublicId}`);
+        }
+      } catch (err) {
+        console.error(`Failed to delete image ${imgPublicId}:`, err);
+      }
     }
 
     next();
