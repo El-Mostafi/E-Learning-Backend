@@ -13,6 +13,8 @@ declare global {
     emailConfirmed: boolean;
     profileImg: string;
     role: UserRole;
+    status: "active" | "blocked";
+    lastLogin: Date|null;
     expertise?: string;
     yearsOfExperience?: number;
     biography?: String;
