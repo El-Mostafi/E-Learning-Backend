@@ -2,7 +2,7 @@ import express, { Router, Request, Response, NextFunction } from "express";
 import Stripe from "stripe";
 import bodyParser from "body-parser";
 import { BadRequestError, currentUser, requireAuth } from "../../../common";
-import { roleIsStudent } from "../../../common/src/middllewares/validate-roles";
+import { roleIsAdmin, roleIsStudent } from "../../../common/src/middllewares/validate-roles";
 import stripeService from "../../service/stripe/stripe.service";
 
 
@@ -58,6 +58,21 @@ router.post(
     } catch (err) {
       console.error("❌ Error in Stripe webhook handler:", err);
       res.status(500).send("Webhook processing failed");
+    }
+  }
+);
+router.get(
+  "/api/admin/revenue-stats",
+  requireAuth,
+  currentUser,
+  roleIsAdmin,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const stats = await stripeService.getRevenueStats();
+      res.status(200).send(stats);
+    } catch (err) {
+      // Pass any errors to the error-handling middleware
+      next(err);
     }
   }
 );

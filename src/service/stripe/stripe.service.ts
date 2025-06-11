@@ -92,6 +92,42 @@ export class StripeService {
       console.log(`ℹ️ Unhandled event type: ${event.type}`);
     }
   }
+  async getRevenueStats() {
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setFullYear(startDate.getFullYear() - 1);
+    startDate.setDate(1); 
+    const monthlyRevenue = Array(12).fill(0);
+
+    let totalRevenue = 0;
+    const transactions = stripe.balanceTransactions.list({
+      type: 'charge', 
+      created: {
+        gte: Math.floor(startDate.getTime() / 1000),
+        lte: Math.floor(endDate.getTime() / 1000),
+      },
+      limit: 100, 
+    });
+
+    for await (const transaction of transactions) {
+      const revenueAmount = transaction.amount / 100;
+      totalRevenue += revenueAmount;
+
+      const transactionDate = new Date(transaction.created * 1000);
+      const monthIndex = transactionDate.getMonth();
+      
+      monthlyRevenue[monthIndex] += revenueAmount;
+    }
+    
+    const revenueChartSeries = {
+      data: monthlyRevenue.map(val => Math.round(val)),
+    };
+
+    return {
+      totalRevenue: Math.round(totalRevenue), 
+      revenueChartSeries,
+    };
+  }
 }
 
 const stripeService = new StripeService();

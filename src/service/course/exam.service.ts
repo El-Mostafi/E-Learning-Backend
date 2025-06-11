@@ -8,14 +8,15 @@ export class ExamService {
   async create(
     userId: mongoose.Types.ObjectId,
     courseId: string,
-    examDto: ExamDto
+    examDto: ExamDto,
+    userRole: string
   ) {
     const course = await Course.findById(courseId);
     if (!course) {
       return { success: false, message: "Course not found" };
     }
     // Check if the user is the instructor of the course
-    if (course.instructor.toString() !== userId.toString()) {
+    if (course.instructor.toString() !== userId.toString() && userRole !== "admin") {
       return { success: false, message: "Unauthorized" };
     }
 
@@ -59,14 +60,15 @@ export class ExamService {
     userId: mongoose.Types.ObjectId,
     courseId: string,
     examId: string,
-    examDto: ExamDto
+    examDto: ExamDto,
+    userRole: string
   ) {
     const course = await Course.findById(courseId);
     if (!course) {
       return { success: false, message: "Course not found" };
     }
     // Check if the user is the instructor of the course
-    if (course.instructor.toString() !== userId.toString()) {
+    if (course.instructor.toString() !== userId.toString(), userRole !== "admin") {
       return { success: false, message: "Unauthorized" };
     }
 
@@ -91,14 +93,15 @@ export class ExamService {
   async delete(
     userId: mongoose.Types.ObjectId,
     courseId: string,
-    examId: string
+    examId: string,
+    userRole: string
   ) {
     const course = await Course.findById(courseId);
     if (!course) {
       return { success: false, message: "Course not found" };
     }
     // Check if the user is the instructor of the course
-    if (course.instructor.toString() !== userId.toString()) {
+    if (course.instructor.toString() !== userId.toString(), userRole !== "admin") {
       return { success: false, message: "Unauthorized" };
     }
 

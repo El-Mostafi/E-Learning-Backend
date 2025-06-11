@@ -14,3 +14,18 @@ export interface EnrollmentInterface {
   completedAt: Date | null;
   startedAt: Date;
 }
+export type EnrolledCoursesSortOption = "newest" | "title" | "progress" | "rating";
+
+export interface FindAllEnrollmentsOptions {
+  page: number;
+  limit: number;
+  search?: string;
+  sort: EnrolledCoursesSortOption;
+}
+export interface courseStudentTable {
+  id: string;
+  title: string;
+  thumbnailPreview: string;
+  progress: number;
+  completed: boolean;
+}

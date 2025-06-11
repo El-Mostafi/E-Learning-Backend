@@ -1,8 +1,11 @@
 import mongoose from "mongoose";
 import Course, { CourseDocument, Section, Lecture } from "../../models/course";
 import {
+  AugmentedCourse,
   CourseDto,
   CourseDtoWithCoupons,
+  FindAllInstructorCoursesOptions,
+  GetAllCoursesOptions,
 } from "../../routers/course/dtos/course.dto";
 import {
   courseData,
@@ -15,7 +18,7 @@ import { BadRequestError } from "../../../common";
 import Enrollment, { EnrollmentDocument } from "../../models/enrollment";
 import { PopularityService } from "../popularity/popularity.service";
 import { CartItem } from "../../models/cartItem";
-import User from "../../models/user";
+import User, { UserDocument } from "../../models/user";
 
 export class CourseService {
   constructor() {}
@@ -92,27 +95,35 @@ export class CourseService {
 
     if (!cartItem) {
       return {
-      success: true,
-      course: this.transformCourse(course, enrollment, null),
-    };
+        success: true,
+        course: this.transformCourse(course, enrollment, null),
+      };
     }
 
     return {
       success: true,
-      course: this.transformCourse(course, enrollment, cartItem.appliedCoupon===undefined?null:cartItem.appliedCoupon),
+      course: this.transformCourse(
+        course,
+        enrollment,
+        cartItem.appliedCoupon === undefined ? null : cartItem.appliedCoupon
+      ),
     };
   }
 
   async findOneByIdForUpdate(
     userId: mongoose.Types.ObjectId,
-    courseId: string
+    courseId: string,
+    userRole: string
   ) {
     const course = await Course.findById(courseId);
 
     if (!course) {
       return { success: false, message: "Course not Found" };
     }
-    if (course.instructor.toString() !== userId.toString()) {
+    if (
+      course.instructor.toString() !== userId.toString() &&
+      userRole !== "admin"
+    ) {
       return { success: false, message: "Permission denied!" };
     }
 
@@ -339,18 +350,71 @@ export class CourseService {
     // };
   }
 
-  async findAllByInstructorId(instructorId: mongoose.Types.ObjectId) {
-    const courses = await Course.find({ instructor: instructorId }).populate(
-      "instructor",
-      ["userName", "profileImg", "AboutMe", "speciality"]
-    );
-    if (!courses) {
-      return { success: false, message: "No courses found" };
+  async findAllByInstructorId(
+    instructorId: mongoose.Types.ObjectId,
+    options: FindAllInstructorCoursesOptions
+  ) {
+    const { page, limit, search, sort } = options;
+    try {
+      const courses = await Course.find({ instructor: instructorId }).populate(
+        "instructor",
+        ["userName", "profileImg", "AboutMe", "speciality"]
+      );
+      if (!courses) {
+        return { success: false, message: "No courses found" };
+      }
+      const allTransformedCourses = courses.map((course) =>
+        this.transformInstructor(course)
+      );
+
+      let filteredCourses = allTransformedCourses;
+      if (search && search.trim()) {
+        const searchTerm = search.toLowerCase().trim();
+        filteredCourses = allTransformedCourses.filter(
+          (course) =>
+            course.title.toLowerCase().includes(searchTerm) ||
+            course.category.toLowerCase().includes(searchTerm)
+        );
+      }
+      // Apply sorting
+      const sortedCourses = [...filteredCourses].sort((a, b) => {
+        switch (sort) {
+          case "title":
+            return a.title.localeCompare(b.title);
+
+          case "popularity":
+            return b.students - a.students;
+
+          case "rating":
+            return b.reviews - a.reviews;
+
+          default:
+            return (
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
+        }
+      });
+      const totalCount = sortedCourses.length;
+      const totalPages = Math.ceil(totalCount / limit);
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+
+      const paginatedCourses = sortedCourses.slice(startIndex, endIndex);
+
+      return {
+        success: true,
+        courses: paginatedCourses,
+        currentPage: page,
+        totalPages,
+        totalCourses: totalCount,
+      };
+    } catch (error) {
+      console.error("Error in findAllOverview:", error);
+      return {
+        success: false,
+        message: "Failed to fetch enrollments",
+      };
     }
-    return {
-      success: true,
-      courses: courses.map((course) => this.transformInstructor(course)),
-    };
   }
 
   async findAllByCategoryId(
@@ -378,13 +442,17 @@ export class CourseService {
   async updateOneById(
     userId: mongoose.Types.ObjectId,
     courseId: string,
-    courseDto: CourseDtoWithCoupons
+    courseDto: CourseDtoWithCoupons,
+    userRole: string
   ) {
     const course = await Course.findById(courseId);
     if (!course) {
       return { success: false, message: "Course not found" };
     }
-    if (course.instructor.toString() !== userId.toString()) {
+    if (
+      course.instructor.toString() !== userId.toString() &&
+      userRole !== "admin"
+    ) {
       return { success: false, message: "Permission denied!" };
     }
     const { coupons, ...courseData } = courseDto;
@@ -404,12 +472,19 @@ export class CourseService {
     return { success: true, message: "Course updated successfully!" };
   }
 
-  async deleteOneById(userId: mongoose.Types.ObjectId, courseId: string) {
+  async deleteOneById(
+    userId: mongoose.Types.ObjectId,
+    courseId: string,
+    userRole: string
+  ) {
     const course = await Course.findById(courseId);
     if (!course) {
       return { success: false, message: "Course not found!" };
     }
-    if (course.instructor.toString() !== userId.toString()) {
+    if (
+      course.instructor.toString() !== userId.toString() &&
+      userRole !== "admin"
+    ) {
       return { success: false, message: "Permission denied!" };
     }
     const deletedCourse = await Course.findByIdAndDelete(courseId);
@@ -422,12 +497,19 @@ export class CourseService {
     return { success: true, message: "Course deleted successfully" };
   }
 
-  async publishOneById(userId: mongoose.Types.ObjectId, courseId: string) {
+  async publishOneById(
+    userId: mongoose.Types.ObjectId,
+    courseId: string,
+    userRole: string
+  ) {
     const course = await Course.findById(courseId);
     if (!course) {
       return { success: false, message: "Course not found!" };
     }
-    if (course.instructor.toString() !== userId.toString()) {
+    if (
+      course.instructor.toString() !== userId.toString() &&
+      userRole !== "admin"
+    ) {
       return { success: false, message: "Permission denied!" };
     }
     const publishedCourse = await Course.findByIdAndUpdate(
@@ -442,6 +524,44 @@ export class CourseService {
       };
     }
     return { success: true, message: "Course published successfully" };
+  }
+  async togglePublishStatus(courseId: string): Promise<{
+    success: boolean;
+    message: string;
+    isPublished?: boolean;
+  }> {
+    try {
+      const course = await Course.findById(courseId);
+
+      if (!course) {
+        return { success: false, message: "Course not found." };
+      }
+
+      const newPublishStatus = !course.isPublished;
+
+      course.isPublished = newPublishStatus;
+      await course.save();
+
+      // 6. Return a successful response
+      const message = newPublishStatus
+        ? "Course published successfully."
+        : "Course unpublished successfully.";
+
+      return {
+        success: true,
+        message,
+        isPublished: newPublishStatus,
+      };
+    } catch (error: any) {
+      console.error("Error toggling publish status:", error);
+      // Return a specific error if asset tagging failed, or a generic one otherwise.
+      const errorMessage =
+        error.message === "Failed to update asset tags on the cloud."
+          ? "Failed to update asset tags. The course status was not changed."
+          : "An unexpected error occurred while updating the course status.";
+
+      return { success: false, message: errorMessage };
+    }
   }
 
   async unpublishOneById(userId: mongoose.Types.ObjectId, courseId: string) {
@@ -534,6 +654,120 @@ export class CourseService {
     }
     return { success: false, message: "User is not enrolled in the course" };
   };
+  async getAllCourses(options: GetAllCoursesOptions): Promise<{
+    courses: AugmentedCourse[];
+    totalPages: number;
+    currentPage: number;
+    totalCourses: number;
+  }> {
+    const { page, limit, search, status, category, level, language } = options;
+
+    // 1. Build the dynamic query object
+    const query: any = {};
+    if (status) {
+      query.isPublished = status === "published";
+    }
+    if (category) {
+      // Querying a field within a sub-document
+      query["category.name"] = { $regex: category, $options: "i" };
+    }
+    if (level) {
+      query.level = level;
+    }
+    if (language) {
+      query.language = language;
+    }
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    // 2. Fetch the base course data from the database
+    // We populate the instructor to get their name.
+    const courses = await Course.find(query)
+      .populate<{ instructor: Pick<UserDocument, "userName"> }>(
+        "instructor",
+        "userName" // Select only the userName field from the User document
+      )
+      .limit(limit)
+      .skip((page - 1) * limit)
+      .sort({ createdAt: -1 })
+      .lean() // .lean() for performance and easier object manipulation
+      .exec();
+
+    // 3. Augment the courses with calculated data
+    const augmentedCourses: AugmentedCourse[] = courses.map((course) => {
+      // Calculate Average Rating
+      const totalRating = course.reviews.reduce(
+        (sum, review) => sum + review.rating,
+        0
+      );
+      const averageRating =
+        course.reviews.length > 0
+          ? parseFloat((totalRating / course.reviews.length).toFixed(1))
+          : 0;
+
+      // Get student count
+      const numberOfStudents = course.students?.length || 0;
+
+      // Calculate Revenue
+      const revenue = numberOfStudents * (course.pricing.price || 0);
+
+      return {
+        id: course._id.toString(),
+        title: course.title,
+        numberOfSections: course.sections?.length || 0,
+        category: course.category?.name || "N/A",
+        // The populated instructor is an object, so we access its property
+        instructor: course.instructor?.userName || "N/A",
+        numberOfStudents: numberOfStudents,
+        averageRating: averageRating,
+        revenue: revenue,
+        status: course.isPublished ? "Published" : "Draft",
+        createdAt: course.createdAt,
+      };
+    });
+
+    // 4. Get the total count for pagination
+    const totalCourses = await Course.countDocuments(query);
+
+    // 5. Return the final paginated and augmented result
+    return {
+      courses: augmentedCourses,
+      totalPages: Math.ceil(totalCourses / limit),
+      currentPage: page,
+      totalCourses,
+    };
+  }
+  public async getAllCategories(): Promise<string[]> {
+    const categories = await Course.distinct("category.name");
+    return categories;
+  }
+  async getUsedLanguages(): Promise<{
+    success: boolean;
+    languages?: string[];
+    message?: string;
+  }> {
+    try {
+      const languages = await Course.distinct("language", {
+        isPublished: true,
+      });
+
+      if (!languages) {
+        return { success: false, message: "Could not fetch languages." };
+      }
+
+      return { success: true, languages };
+    } catch (error) {
+      console.error("Error fetching distinct course languages:", error);
+      return {
+        success: false,
+        message: "An error occurred while fetching languages.",
+      };
+    }
+  }
 
   private transformCourse(
     course: CourseDocument,
