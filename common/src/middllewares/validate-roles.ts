@@ -11,6 +11,19 @@ export const roleIsInstructor = async (
   }
   next();
 };
+export const roleIsInstructorOrAdmin = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  if (
+    !req.currentUser ||
+    (req.currentUser.role !== "instructor" && req.currentUser.role !== "admin")
+  ) {
+    return next(new NotAutherizedError());
+  }
+  next();
+};
 
 export const roleIsStudent = async (
   req: Request,

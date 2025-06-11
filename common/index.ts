@@ -8,6 +8,7 @@ export * from './src/middllewares/update-file-tags';
 export * from './src/middllewares/delete-videos-image';
 export * from './src/middllewares/delete-image';
 export * from './src/middllewares/require-ownership';
+export * from './src/middllewares/validate-roles';
 
 
 export * from './src/errors/bad-request-error';
