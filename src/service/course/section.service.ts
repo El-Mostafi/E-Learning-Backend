@@ -8,14 +8,18 @@ export class SectionService {
   async create(
     userId: mongoose.Types.ObjectId,
     courseId: string,
-    sectionDto: SectionDto
+    sectionDto: SectionDto,
+    userRole: string
   ) {
     const course = await Course.findById(courseId);
     if (!course) {
       return { success: false, message: "Course not found" };
     }
     // Check if the user is the instructor of the course
-    if (course.instructor.toString() !== userId.toString()) {
+    if (
+      course.instructor.toString() !== userId.toString() &&
+      userRole !== "admin"
+    ) {
       return { success: false, message: "Unauthorized" };
     }
 
@@ -29,7 +33,11 @@ export class SectionService {
 
     course.sections.push(newSection);
     await course.save();
-    return { success: true, message: "Section created successfully", sectionId: course.sections[course.sections.length - 1].id };
+    return {
+      success: true,
+      message: "Section created successfully",
+      sectionId: course.sections[course.sections.length - 1].id,
+    };
   }
 
   async findAll(courseId: string) {
@@ -56,14 +64,18 @@ export class SectionService {
     userId: mongoose.Types.ObjectId,
     courseId: string,
     sectionId: string,
-    sectionDto: SectionDto
+    sectionDto: SectionDto,
+    userRole: string
   ) {
     const course = await Course.findById(courseId);
     if (!course) {
       return { success: false, message: "Course not found" };
     }
     // Check if the user is the instructor of the course
-    if (course.instructor.toString() !== userId.toString()) {
+    if (
+      course.instructor.toString() !== userId.toString() &&
+      userRole !== "admin"
+    ) {
       return { success: false, message: "Unauthorized" };
     }
 
@@ -82,14 +94,18 @@ export class SectionService {
   async delete(
     userId: mongoose.Types.ObjectId,
     courseId: string,
-    sectionId: string
+    sectionId: string,
+    userRole: string
   ) {
     const course = await Course.findById(courseId);
     if (!course) {
       return { success: false, message: "Course not found" };
     }
     // Check if the user is the instructor of the course
-    if (course.instructor.toString() !== userId.toString()) {
+    if (
+      course.instructor.toString() !== userId.toString() &&
+      userRole !== "admin"
+    ) {
       return { success: false, message: "Unauthorized" };
     }
 

@@ -8,7 +8,7 @@ import {
   ValidationRequest,
 } from "../../../common";
 import { ExamDto } from "./dtos/course.dto";
-import { roleIsInstructor } from "../../../common/src/middllewares/validate-roles";
+import { roleIsInstructor, roleIsInstructorOrAdmin } from "../../../common/src/middllewares/validate-roles";
 
 const router = Router();
 const examService = new ExamService();
@@ -59,13 +59,14 @@ router.post(
   ValidationRequest,
   requireAuth,
   currentUser,
-  roleIsInstructor,
+  roleIsInstructorOrAdmin,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.currentUser!.userId;
+      const userRole = req.currentUser!.role;
       const courseId = req.params.id;
       const examDto = req.body as ExamDto;
-      const result = await examService.create(userId, courseId, examDto);
+      const result = await examService.create(userId, courseId, examDto, userRole);
       if (!result.success) {
         return next(new BadRequestError(result.message));
       }
@@ -94,7 +95,7 @@ router.put(
   ValidationRequest,
   requireAuth,
   currentUser,
-  roleIsInstructor,
+  roleIsInstructorOrAdmin,
 
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -102,11 +103,13 @@ router.put(
       const courseId = req.params.id;
       const examId = req.params.examId;
       const examDto: ExamDto = req.body;
+      const userRole = req.currentUser!.role;
       const result = await examService.update(
         userId,
         courseId,
         examId,
-        examDto
+        examDto,
+        userRole
       );
       if (!result.success) {
         return next(new BadRequestError(result.message));
@@ -123,13 +126,14 @@ router.delete(
   "/api/courses/:id/exams/:examId/delete-exam",
   requireAuth,
   currentUser,
-  roleIsInstructor,
+  roleIsInstructorOrAdmin,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.currentUser!.userId;
       const courseId = req.params.id;
       const examId = req.params.examId;
-      const result = await examService.delete(userId, courseId, examId);
+      const userRole = req.currentUser!.role;
+      const result = await examService.delete(userId, courseId, examId, userRole);
       if (!result.success) {
         return next(new BadRequestError(result.message));
       }
