@@ -8,6 +8,7 @@ export enum Level {
   Beginner = "Beginner",
   Intermediate = "Intermediate",
   Advanced = "Advanced",
+  All_Levels = "All Levels",
 }
 
 export enum Language {
@@ -17,6 +18,7 @@ export enum Language {
   French = "French",
   German = "German",
   Italian = "Italian",
+  Chinese = "Chinese",
 }
 
 export interface Lecture extends mongoose.Document {

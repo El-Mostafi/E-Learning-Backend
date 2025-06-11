@@ -13,10 +13,8 @@ export interface UserDocument extends mongoose.Document {
   role: UserRole;
   emailConfirmed: boolean;
   profileImg: string;
-  coverImg: string;
   publicId: string;
   createdAt: Date;
-  aboutMe?: string;
   // Student-specific fields
   educationLevel?: string;
   fieldOfStudy?: string;
@@ -24,6 +22,16 @@ export interface UserDocument extends mongoose.Document {
   expertise?: string;
   yearsOfExperience?: number;
   biography?: string;
+
+  status: "active" | "blocked";
+  lastLogin: Date | null;
+
+  socialLinks: {
+    github: string;
+    linkedin: string;
+    twitter: string;
+    portfolio: string;
+  };
 
   enrollments: mongoose.Types.ObjectId[];
   reviews: mongoose.Types.DocumentArray<Review>;
@@ -36,7 +44,6 @@ export interface CreateUserDto {
   password: string;
   userName: string;
   role: UserRole;
-  aboutMe?: string;
   // Student fields
   educationLevel?: string;
   fieldOfStudy?: string;
@@ -83,10 +90,6 @@ const userSchema = new mongoose.Schema<UserDocument>({
     default:
       "https://res.cloudinary.com/dkqkxtwuf/image/upload/v1740161005/defaultAvatar_iotzd9.avif",
   },
-  coverImg: {
-    type: String,
-    default: null,
-  },
   publicId: {
     type: String,
     default: null,
@@ -94,10 +97,6 @@ const userSchema = new mongoose.Schema<UserDocument>({
   createdAt: {
     type: Date,
     default: Date.now,
-  },
-  aboutMe: {
-    type: String,
-    default: null,
   },
   // Student-specific fields
   educationLevel: {
@@ -134,6 +133,21 @@ const userSchema = new mongoose.Schema<UserDocument>({
     trim: true,
     maxlength: 500,
   },
+  status: {
+    type: String,
+    enum: ["active", "blocked"],
+    default: "active",
+  },
+  lastLogin: {
+    type: Date,
+    default: null,
+  },
+  socialLinks: {
+    github: { type: String, default: "" },
+    linkedin: { type: String, default: "" },
+    twitter: { type: String, default: "" },
+    portfolio: { type: String, default: "" },
+  },
 
   // Fields related to courses
   enrollments: [
@@ -149,7 +163,6 @@ const userSchema = new mongoose.Schema<UserDocument>({
   certificates: [certificateSchema],
   cart: [cartItemSchema],
 });
-
 
 userSchema.pre("save", async function (next) {
   const authenticationService = new AuthenticationService();
