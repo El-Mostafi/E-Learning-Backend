@@ -143,198 +143,218 @@ export class CourseService {
       search?: string | undefined;
     }
   ) {
-    console.log(filterParams);
-    let sort: any = { createdAt: -1 };
-    if (sortOption === "rating") {
-      console.log("Sorting by rating");
-      sort = { averageRating: -1 };
-    }
-    if (sortOption === "enrollmentCount") {
-      console.log("Sorting by enrollment count");
-      sort = { enrollmentCount: -1 };
-    }
-    if (sortOption === "popularity") {
-      console.log("Sorting by popularity");
-      const popularityService = new PopularityService();
-      const popularityResult = await popularityService.getPopularCourses(
-        (filterParams?.ratings && filterParams.ratings.length > 0 ? Math.min(...filterParams.ratings) : 3.0),
-        page,
-        limit,
-        undefined,
-        filterParams,
-        true,
-      );
-      return {
-        courses: popularityResult.data,
-        totalCount: popularityResult.totalCount,
-      };
-    }
+    // console.log(filterParams);
 
-    const skip = (page - 1) * limit;
+    try {
+      let sort: any = { createdAt: -1 };
+      if (sortOption === "rating") {
+        console.log("Sorting by rating");
+        sort = { averageRating: -1 };
+      }
+      if (sortOption === "enrollmentCount") {
+        console.log("Sorting by enrollment count");
+        sort = { enrollmentCount: -1 };
+      }
+      if (sortOption === "popularity") {
+        console.log("Sorting by popularity");
+        const popularityService = new PopularityService();
+        const popularityResult = await popularityService.getPopularCourses(
+          0,
+          page,
+          limit,
+          undefined,
+          filterParams,
+          true
+        );
+        return {
+          success: true,
+          courses: popularityResult.data,
+          totalCount: popularityResult.totalCount,
+        };
+      }
 
-    const initialMatch: any = { isPublished: true };
-    let filterByAverageRating =
-      filterParams &&
-      filterParams.ratings &&
-      Array.isArray(filterParams.ratings);
+      const skip = (page - 1) * limit;
 
-    let filterByLevels =
-      filterParams && filterParams.levels && Array.isArray(filterParams.levels);
+      const initialMatch: any = { isPublished: true };
+      let filterByAverageRating =
+        filterParams &&
+        filterParams.ratings &&
+        Array.isArray(filterParams.ratings);
 
-    let filterByPrice = filterParams && filterParams.price;
+      let filterByLevels =
+        filterParams &&
+        filterParams.levels &&
+        Array.isArray(filterParams.levels);
 
-    let filterByCategories =
-      filterParams &&
-      filterParams.categories &&
-      Array.isArray(filterParams.categories);
+      let filterByPrice = filterParams && filterParams.price;
 
-    let keywordSearch = filterParams && filterParams.search;
-    // Build keyword search filter if needed
-    let keywordMatch: any = {};
-    if (keywordSearch && typeof filterParams!.search === "string" && filterParams!.search.trim() !== "") {
-      const searchRegex = new RegExp(filterParams!.search.trim(), "i");
-      keywordMatch = {
-      $or: [
-        { title: searchRegex },
-        { description: searchRegex },
-        { "category.name": searchRegex },
-      ],
-      };
-    }
+      let filterByCategories =
+        filterParams &&
+        filterParams.categories &&
+        Array.isArray(filterParams.categories);
 
- 
-    let filterByInstructors =
-      filterParams &&
-      filterParams.instructors &&
-      Array.isArray(filterParams.instructors);
+      let keywordSearch = filterParams && filterParams.search;
+      // Build keyword search filter if needed
+      let keywordMatch: any = {};
+      if (
+        keywordSearch &&
+        typeof filterParams!.search === "string" &&
+        filterParams!.search.trim() !== ""
+      ) {
+        const searchRegex = new RegExp(filterParams!.search.trim(), "i");
+        keywordMatch = {
+          $or: [
+            { title: searchRegex },
+            { description: searchRegex },
+            { "category.name": searchRegex },
+          ],
+        };
+      }
 
-    let instructorObjectIds: mongoose.Types.ObjectId[] = [];
-    if (filterByInstructors) {
-      instructorObjectIds = filterParams!.instructors!.map(
-        (id: string) => new mongoose.Types.ObjectId(id)
-      );
-    }
+      let filterByInstructors =
+        filterParams &&
+        filterParams.instructors &&
+        Array.isArray(filterParams.instructors);
 
-    const aggregationResult = await Course.aggregate([
-      { $match: initialMatch },
+      let instructorObjectIds: mongoose.Types.ObjectId[] = [];
+      if (filterByInstructors) {
+        instructorObjectIds = filterParams!.instructors!.map(
+          (id: string) => new mongoose.Types.ObjectId(id)
+        );
+      }
 
-      {
-        $addFields: {
-          enrollmentCount: { $size: "$students" },
-          averageRating: {
-            $cond: [
-              { $eq: [{ $size: "$reviews" }, 0] },
-              0,
-              { $avg: "$reviews.rating" },
-            ],
+      const aggregationResult = await Course.aggregate([
+        { $match: initialMatch },
+
+        {
+          $addFields: {
+            enrollmentCount: { $size: "$students" },
+            averageRating: {
+              $cond: [
+                { $eq: [{ $size: "$reviews" }, 0] },
+                0,
+                { $avg: "$reviews.rating" },
+              ],
+            },
           },
         },
-      },
 
-      filterByAverageRating
-        ? {
-            $match: {
-              averageRating: { $in: filterParams!.ratings },
-            },
-          }
-        : { $match: {} },
+        filterByAverageRating
+          ? {
+              $match: {
+                averageRating: { $in: filterParams!.ratings },
+              },
+            }
+          : { $match: {} },
 
-      filterByLevels
-        ? {
-            $match: {
-              level: { $in: filterParams!.levels },
-            },
-          }
-        : { $match: {} },
+        filterByLevels
+          ? {
+              $match: {
+                level: { $in: filterParams!.levels },
+              },
+            }
+          : { $match: {} },
 
-      filterByCategories
-        ? {
-            $match: {
-              "category.name": { $in: filterParams!.categories },
-            },
-          }
-        : { $match: {} },
+        filterByCategories
+          ? {
+              $match: {
+                "category.name": { $in: filterParams!.categories },
+              },
+            }
+          : { $match: {} },
 
-      filterByPrice
-        ? {
-            $match: {
-              "pricing.isFree": filterParams!.price === "Free"
-            },
-          }
-        : { $match: {} },
+        filterByPrice
+          ? {
+              $match: {
+                "pricing.isFree": filterParams!.price === "Free",
+              },
+            }
+          : { $match: {} },
 
-      filterByInstructors
-        ? {
-            $match: {
-              instructor: { $in: instructorObjectIds },
-            },
-          }
-        : { $match: {} },
+        filterByInstructors
+          ? {
+              $match: {
+                instructor: { $in: instructorObjectIds },
+              },
+            }
+          : { $match: {} },
 
-      // Keyword search match
-      Object.keys(keywordMatch).length > 0 ? { $match: keywordMatch } : { $match: {} },
-        
-      {
-        $facet: {
-          paginatedResults: [
-            { $sort: sort },
-            { $skip: skip },
-            { $limit: limit },
-            {
-              $lookup: {
-                from: "users",
-                let: { instructorId: "$instructor" },
-                pipeline: [
-                  {
-                    $match: {
-                      $expr: {
-                        $and: [
-                          { $eq: ["$_id", "$$instructorId"] },
-                          { $eq: ["$role", "instructor"] },
-                        ],
+        // Keyword search match
+        Object.keys(keywordMatch).length > 0
+          ? { $match: keywordMatch }
+          : { $match: {} },
+
+        {
+          $facet: {
+            paginatedResults: [
+              { $sort: sort },
+              { $skip: skip },
+              { $limit: limit },
+              {
+                $lookup: {
+                  from: "users",
+                  let: { instructorId: "$instructor" },
+                  pipeline: [
+                    {
+                      $match: {
+                        $expr: {
+                          $and: [
+                            { $eq: ["$_id", "$$instructorId"] },
+                            {
+                              $or: [
+                                { $eq: ["$role", "instructor"] },
+                                { $eq: ["$role", "admin"] },
+                              ],
+                            },
+                          ],
+                        },
                       },
                     },
-                  },
-                ],
-                as: "instructorDetails",
-              },
-            },
-            // Add instructor field with proper fallback
-            {
-              $addFields: {
-                instructor: {
-                  $cond: [
-                    { $gt: [{ $size: "$instructorDetails" }, 0] },
-                    { $arrayElemAt: ["$instructorDetails", 0] },
-                    null,
                   ],
+                  as: "instructorDetails",
                 },
               },
-            },
-          ],
-          totalCount: [{ $count: "count" }],
+              // Add instructor field with proper fallback
+              {
+                $addFields: {
+                  instructor: {
+                    $cond: [
+                      { $gt: [{ $size: "$instructorDetails" }, 0] },
+                      { $arrayElemAt: ["$instructorDetails", 0] },
+                      null,
+                    ],
+                  },
+                },
+              },
+            ],
+            totalCount: [{ $count: "count" }],
+          },
         },
-      },
-      {
-        $project: {
-          data: "$paginatedResults",
-          totalCount: { $arrayElemAt: ["$totalCount.count", 0] },
+        {
+          $project: {
+            data: "$paginatedResults",
+            totalCount: { $arrayElemAt: ["$totalCount.count", 0] },
+          },
         },
-      },
-    ]);
+      ]);
 
-    const result = aggregationResult[0] || { data: [], totalCount: 0 };
-
-    const transformedCourses = await Promise.all(
-      (result.data || []).map(async (course: CourseDocument) => {
-        return this.transformCourseGenerale(course);
-      })
-    );
-
-    return {
-      courses: transformedCourses,
-      totalCount: result.totalCount || 0,
-    };
+      const result = aggregationResult[0] || { data: [], totalCount: 0 };
+      // console.log("result", result.data);
+      const transformedCourses = await Promise.all(
+        (result.data || []).map(async (course: CourseDocument) => {
+          return this.transformCourseGenerale(course);
+        })
+      );
+      // console.log("transformedCourses", transformedCourses);
+      return {
+        success: true,
+        courses: transformedCourses,
+        totalCount: result.totalCount || 0,
+      };
+    } catch (error) {
+      console.log(error);
+      return { success: false, message: "No published courses found" };
+    }
 
     // const courses = await Course.find({ isPublished: true }).populate(
     //   "instructor",

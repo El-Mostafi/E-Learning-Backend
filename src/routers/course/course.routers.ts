@@ -44,6 +44,9 @@ router.get(
         sortOption,
         filterParams
       );
+      if (!result.success) {
+        return next(new BadRequestError(result.message!));
+      }
       res.status(200).send(result);
     } catch (error) {
       next(error);

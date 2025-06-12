@@ -20,7 +20,6 @@ export class PopularityService {
     },
     pagination?: boolean
   ) {
-
     let filterByLevels =
       filterParams && filterParams.levels && Array.isArray(filterParams.levels);
 
@@ -157,7 +156,12 @@ export class PopularityService {
                         $expr: {
                           $and: [
                             { $eq: ["$_id", "$$instructorId"] },
-                            { $eq: ["$role", "instructor"] },
+                            {
+                              $or: [
+                                { $eq: ["$role", "instructor"] },
+                                { $eq: ["$role", "admin"] },
+                              ],
+                            },
                           ],
                         },
                       },
@@ -225,7 +229,7 @@ export class PopularityService {
         dataLength: result.data?.length || 0,
         totalCount: result.totalCount || 0,
       });
-
+      console.log("Final result:", result.data);
       // Transform the courses to match your courseDataGenerale interface
       const transformedCourses = await Promise.all(
         (result.data || []).map(async (course: CourseDocument) => {
