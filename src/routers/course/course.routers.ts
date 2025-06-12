@@ -29,10 +29,12 @@ router.get(
       const filterParams = req.query.filterParams as any;
 
       if (filterParams?.ratings) {
-        filterParams.ratings = filterParams.ratings.map((rating: string) => parseInt(rating));
+        filterParams.ratings = filterParams.ratings.map((rating: string) =>
+          parseInt(rating)
+        );
       }
 
-      
+      console.log("Hello from Here!")
 
       const result = await courseService.findPublishedCourses(
         page,
@@ -40,8 +42,10 @@ router.get(
         sortOption,
         filterParams
       );
+      console.log("Hello from there!")
       res.status(200).send(result);
     } catch (error) {
+      console.log(error)
       next(error);
     }
   }

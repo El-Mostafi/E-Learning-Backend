@@ -685,6 +685,7 @@ export class CourseService {
   }
 
   private transformCourseGenerale(course: CourseDocument): courseDataGenerale {
+    try{
     const totalRating = course.reviews.reduce(
       (sum, review) => sum + review.rating,
       0
@@ -704,22 +705,27 @@ export class CourseService {
       0
     );
     return {
-      id: (course._id as mongoose.Types.ObjectId).toString(),
-      title: course.title,
-      description: course.description,
-      language: course.language,
-      thumbnailPreview: course.thumbnailPreview,
-      category: course.category.name,
-      level: course.level,
-      price: course.pricing.price,
-      reviews: averageRating,
-      duration: totaleDuration,
-      students: course.students.length,
-      instructorName: (course.instructor as any).userName,
-      instructorImg: (course.instructor as any).profileImg,
-      InstructorId: (course.instructor as any).id,
-      createdAt: course.createdAt,
+      id: (course._id as mongoose.Types.ObjectId).toString() || "",
+      title: course.title || "",
+      description: course.description || "",
+      language: course.language || "",
+      thumbnailPreview: course.thumbnailPreview || "",
+      category: course.category.name || "",
+      level: course.level  || "",
+      price: course.pricing.price  || 0,
+      reviews: averageRating || 0,
+      duration: totaleDuration || 0,
+      students: course.students.length || 0,
+      instructorName: (course.instructor as any)?.userName || "Unknown Instructor",
+      instructorImg: (course.instructor as any)?.profileImg || "",
+      InstructorId: (course.instructor as any)?.id || "",
+      createdAt: course.createdAt || "",
     };
+  } catch (error) {
+    console.log(error)
+    console.log("CourseTRy",course)
+    return {} as courseDataGenerale;
+  }
   }
   private transformCourseDetails(
     course: CourseDocument,
