@@ -465,31 +465,53 @@ export class CourseService {
     courseDto: CourseDtoWithCoupons,
     userRole: string
   ) {
-    const course = await Course.findById(courseId);
-    if (!course) {
-      return { success: false, message: "Course not found" };
-    }
-    if (
-      course.instructor.toString() !== userId.toString() &&
-      userRole !== "admin"
-    ) {
-      return { success: false, message: "Permission denied!" };
-    }
-    const { coupons, ...courseData } = courseDto;
-    const updatedCourse = await Course.findByIdAndUpdate(courseId, courseData, {
-      new: true,
-    });
-    if (!updatedCourse) {
+    try {
+      console.log("courseDto", courseDto);
+      const course = await Course.findById(courseId);
+      if (!course) {
+        return { success: false, message: "Course not found" };
+      }
+      if (
+        course.instructor.toString() !== userId.toString() &&
+        userRole !== "admin"
+      ) {
+        return { success: false, message: "Permission denied!" };
+      }
+      
+      const updateData = {
+        ...courseDto, 
+        sections: [], 
+        quizQuestions: [], 
+      };
+
+      const updatedCourse = await Course.findByIdAndUpdate(
+        courseId,
+        updateData, 
+        {
+          new: true, 
+          runValidators: true, 
+        }
+      );
+
+      if (!updatedCourse) {
+        return {
+          success: false,
+          message: "Error while trying to update the course",
+        };
+      }
+
+      return {
+        success: true,
+        message: "Course updated successfully!",
+        course: updatedCourse,
+      };
+    } catch (error) {
+      console.error("Error in updateOneById:", error);
       return {
         success: false,
-        message: "Error while trying to update the course",
+        message: "Failed to update the course",
       };
     }
-    course.set("sections", []);
-    course.set("quizQuestions", []);
-    course.set("coupons", coupons);
-    await course.save();
-    return { success: true, message: "Course updated successfully!" };
   }
 
   async deleteOneById(
