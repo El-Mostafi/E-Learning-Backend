@@ -87,3 +87,18 @@ export interface FindAllInstructorCoursesOptions {
   search?: string;
   sort: InstructorCoursesSortOption;
 }
+
+export interface CreateCouponDto {
+  courseId: string;
+  code: string;
+  discountPercentage: number;
+  maxUses: number;
+  expiryDate: Date;
+}
+
+export interface UpdateCouponDto {
+  code?: string;
+  discountPercentage?: number;
+  maxUses?: number;
+  expiryDate?: Date;
+}

@@ -28,6 +28,7 @@ import { popularityRouters } from "./routers/popularity/popularity.routers";
 import { trendingRouters } from "./routers/trending/trending.routers";
 import {userRouters} from "./routers/user/users.routers"
 import {adminRouters} from "./routers/admin/admin.routers"
+import {couponRouters} from "./routers/course/coupon.routers"
 
 export class AppModule {
   constructor(public app: Application) {
@@ -65,6 +66,7 @@ export class AppModule {
     }
     // this.app.use(currentUser);
 
+    this.app.use(couponRouters)
     this.app.use(studentRouters);
     this.app.use(courseRouter);
     this.app.use(sectionRouter);
