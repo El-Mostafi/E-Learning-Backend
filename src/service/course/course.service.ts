@@ -1,8 +1,11 @@
 import mongoose from "mongoose";
 import Course, { CourseDocument, Section, Lecture } from "../../models/course";
 import {
+  AugmentedCourse,
   CourseDto,
   CourseDtoWithCoupons,
+  FindAllInstructorCoursesOptions,
+  GetAllCoursesOptions,
 } from "../../routers/course/dtos/course.dto";
 import {
   courseData,
@@ -15,7 +18,7 @@ import { BadRequestError } from "../../../common";
 import Enrollment, { EnrollmentDocument } from "../../models/enrollment";
 import { PopularityService } from "../popularity/popularity.service";
 import { CartItem } from "../../models/cartItem";
-import User from "../../models/user";
+import User, { UserDocument } from "../../models/user";
 
 export class CourseService {
   constructor() {}
@@ -92,27 +95,35 @@ export class CourseService {
 
     if (!cartItem) {
       return {
-      success: true,
-      course: this.transformCourse(course, enrollment, null),
-    };
+        success: true,
+        course: this.transformCourse(course, enrollment, null),
+      };
     }
 
     return {
       success: true,
-      course: this.transformCourse(course, enrollment, cartItem.appliedCoupon===undefined?null:cartItem.appliedCoupon),
+      course: this.transformCourse(
+        course,
+        enrollment,
+        cartItem.appliedCoupon === undefined ? null : cartItem.appliedCoupon
+      ),
     };
   }
 
   async findOneByIdForUpdate(
     userId: mongoose.Types.ObjectId,
-    courseId: string
+    courseId: string,
+    userRole: string
   ) {
     const course = await Course.findById(courseId);
 
     if (!course) {
       return { success: false, message: "Course not Found" };
     }
-    if (course.instructor.toString() !== userId.toString()) {
+    if (
+      course.instructor.toString() !== userId.toString() &&
+      userRole !== "admin"
+    ) {
       return { success: false, message: "Permission denied!" };
     }
 
@@ -132,198 +143,218 @@ export class CourseService {
       search?: string | undefined;
     }
   ) {
-    console.log(filterParams);
-    let sort: any = { createdAt: -1 };
-    if (sortOption === "rating") {
-      console.log("Sorting by rating");
-      sort = { averageRating: -1 };
-    }
-    if (sortOption === "enrollmentCount") {
-      console.log("Sorting by enrollment count");
-      sort = { enrollmentCount: -1 };
-    }
-    if (sortOption === "popularity") {
-      console.log("Sorting by popularity");
-      const popularityService = new PopularityService();
-      const popularityResult = await popularityService.getPopularCourses(
-        (filterParams?.ratings && filterParams.ratings.length > 0 ? Math.min(...filterParams.ratings) : 3.0),
-        page,
-        limit,
-        undefined,
-        filterParams,
-        true,
-      );
-      return {
-        courses: popularityResult.data,
-        totalCount: popularityResult.totalCount,
-      };
-    }
+    // console.log(filterParams);
 
-    const skip = (page - 1) * limit;
+    try {
+      let sort: any = { createdAt: -1 };
+      if (sortOption === "rating") {
+        console.log("Sorting by rating");
+        sort = { averageRating: -1 };
+      }
+      if (sortOption === "enrollmentCount") {
+        console.log("Sorting by enrollment count");
+        sort = { enrollmentCount: -1 };
+      }
+      if (sortOption === "popularity") {
+        console.log("Sorting by popularity");
+        const popularityService = new PopularityService();
+        const popularityResult = await popularityService.getPopularCourses(
+          0,
+          page,
+          limit,
+          undefined,
+          filterParams,
+          true
+        );
+        return {
+          success: true,
+          courses: popularityResult.data,
+          totalCount: popularityResult.totalCount,
+        };
+      }
 
-    const initialMatch: any = { isPublished: true };
-    let filterByAverageRating =
-      filterParams &&
-      filterParams.ratings &&
-      Array.isArray(filterParams.ratings);
+      const skip = (page - 1) * limit;
 
-    let filterByLevels =
-      filterParams && filterParams.levels && Array.isArray(filterParams.levels);
+      const initialMatch: any = { isPublished: true };
+      let filterByAverageRating =
+        filterParams &&
+        filterParams.ratings &&
+        Array.isArray(filterParams.ratings);
 
-    let filterByPrice = filterParams && filterParams.price;
+      let filterByLevels =
+        filterParams &&
+        filterParams.levels &&
+        Array.isArray(filterParams.levels);
 
-    let filterByCategories =
-      filterParams &&
-      filterParams.categories &&
-      Array.isArray(filterParams.categories);
+      let filterByPrice = filterParams && filterParams.price;
 
-    let keywordSearch = filterParams && filterParams.search;
-    // Build keyword search filter if needed
-    let keywordMatch: any = {};
-    if (keywordSearch && typeof filterParams!.search === "string" && filterParams!.search.trim() !== "") {
-      const searchRegex = new RegExp(filterParams!.search.trim(), "i");
-      keywordMatch = {
-      $or: [
-        { title: searchRegex },
-        { description: searchRegex },
-        { "category.name": searchRegex },
-      ],
-      };
-    }
+      let filterByCategories =
+        filterParams &&
+        filterParams.categories &&
+        Array.isArray(filterParams.categories);
 
- 
-    let filterByInstructors =
-      filterParams &&
-      filterParams.instructors &&
-      Array.isArray(filterParams.instructors);
+      let keywordSearch = filterParams && filterParams.search;
+      // Build keyword search filter if needed
+      let keywordMatch: any = {};
+      if (
+        keywordSearch &&
+        typeof filterParams!.search === "string" &&
+        filterParams!.search.trim() !== ""
+      ) {
+        const searchRegex = new RegExp(filterParams!.search.trim(), "i");
+        keywordMatch = {
+          $or: [
+            { title: searchRegex },
+            { description: searchRegex },
+            { "category.name": searchRegex },
+          ],
+        };
+      }
 
-    let instructorObjectIds: mongoose.Types.ObjectId[] = [];
-    if (filterByInstructors) {
-      instructorObjectIds = filterParams!.instructors!.map(
-        (id: string) => new mongoose.Types.ObjectId(id)
-      );
-    }
+      let filterByInstructors =
+        filterParams &&
+        filterParams.instructors &&
+        Array.isArray(filterParams.instructors);
 
-    const aggregationResult = await Course.aggregate([
-      { $match: initialMatch },
+      let instructorObjectIds: mongoose.Types.ObjectId[] = [];
+      if (filterByInstructors) {
+        instructorObjectIds = filterParams!.instructors!.map(
+          (id: string) => new mongoose.Types.ObjectId(id)
+        );
+      }
 
-      {
-        $addFields: {
-          enrollmentCount: { $size: "$students" },
-          averageRating: {
-            $cond: [
-              { $eq: [{ $size: "$reviews" }, 0] },
-              0,
-              { $avg: "$reviews.rating" },
-            ],
+      const aggregationResult = await Course.aggregate([
+        { $match: initialMatch },
+
+        {
+          $addFields: {
+            enrollmentCount: { $size: "$students" },
+            averageRating: {
+              $cond: [
+                { $eq: [{ $size: "$reviews" }, 0] },
+                0,
+                { $avg: "$reviews.rating" },
+              ],
+            },
           },
         },
-      },
 
-      filterByAverageRating
-        ? {
-            $match: {
-              averageRating: { $in: filterParams!.ratings },
-            },
-          }
-        : { $match: {} },
+        filterByAverageRating
+          ? {
+              $match: {
+                averageRating: { $in: filterParams!.ratings },
+              },
+            }
+          : { $match: {} },
 
-      filterByLevels
-        ? {
-            $match: {
-              level: { $in: filterParams!.levels },
-            },
-          }
-        : { $match: {} },
+        filterByLevels
+          ? {
+              $match: {
+                level: { $in: filterParams!.levels },
+              },
+            }
+          : { $match: {} },
 
-      filterByCategories
-        ? {
-            $match: {
-              "category.name": { $in: filterParams!.categories },
-            },
-          }
-        : { $match: {} },
+        filterByCategories
+          ? {
+              $match: {
+                "category.name": { $in: filterParams!.categories },
+              },
+            }
+          : { $match: {} },
 
-      filterByPrice
-        ? {
-            $match: {
-              "pricing.isFree": filterParams!.price === "Free"
-            },
-          }
-        : { $match: {} },
+        filterByPrice
+          ? {
+              $match: {
+                "pricing.isFree": filterParams!.price === "Free",
+              },
+            }
+          : { $match: {} },
 
-      filterByInstructors
-        ? {
-            $match: {
-              instructor: { $in: instructorObjectIds },
-            },
-          }
-        : { $match: {} },
+        filterByInstructors
+          ? {
+              $match: {
+                instructor: { $in: instructorObjectIds },
+              },
+            }
+          : { $match: {} },
 
-      // Keyword search match
-      Object.keys(keywordMatch).length > 0 ? { $match: keywordMatch } : { $match: {} },
-        
-      {
-        $facet: {
-          paginatedResults: [
-            { $sort: sort },
-            { $skip: skip },
-            { $limit: limit },
-            {
-              $lookup: {
-                from: "users",
-                let: { instructorId: "$instructor" },
-                pipeline: [
-                  {
-                    $match: {
-                      $expr: {
-                        $and: [
-                          { $eq: ["$_id", "$$instructorId"] },
-                          { $eq: ["$role", "instructor"] },
-                        ],
+        // Keyword search match
+        Object.keys(keywordMatch).length > 0
+          ? { $match: keywordMatch }
+          : { $match: {} },
+
+        {
+          $facet: {
+            paginatedResults: [
+              { $sort: sort },
+              { $skip: skip },
+              { $limit: limit },
+              {
+                $lookup: {
+                  from: "users",
+                  let: { instructorId: "$instructor" },
+                  pipeline: [
+                    {
+                      $match: {
+                        $expr: {
+                          $and: [
+                            { $eq: ["$_id", "$$instructorId"] },
+                            {
+                              $or: [
+                                { $eq: ["$role", "instructor"] },
+                                { $eq: ["$role", "admin"] },
+                              ],
+                            },
+                          ],
+                        },
                       },
                     },
-                  },
-                ],
-                as: "instructorDetails",
-              },
-            },
-            // Add instructor field with proper fallback
-            {
-              $addFields: {
-                instructor: {
-                  $cond: [
-                    { $gt: [{ $size: "$instructorDetails" }, 0] },
-                    { $arrayElemAt: ["$instructorDetails", 0] },
-                    null,
                   ],
+                  as: "instructorDetails",
                 },
               },
-            },
-          ],
-          totalCount: [{ $count: "count" }],
+              // Add instructor field with proper fallback
+              {
+                $addFields: {
+                  instructor: {
+                    $cond: [
+                      { $gt: [{ $size: "$instructorDetails" }, 0] },
+                      { $arrayElemAt: ["$instructorDetails", 0] },
+                      null,
+                    ],
+                  },
+                },
+              },
+            ],
+            totalCount: [{ $count: "count" }],
+          },
         },
-      },
-      {
-        $project: {
-          data: "$paginatedResults",
-          totalCount: { $arrayElemAt: ["$totalCount.count", 0] },
+        {
+          $project: {
+            data: "$paginatedResults",
+            totalCount: { $arrayElemAt: ["$totalCount.count", 0] },
+          },
         },
-      },
-    ]);
+      ]);
 
-    const result = aggregationResult[0] || { data: [], totalCount: 0 };
-
-    const transformedCourses = await Promise.all(
-      (result.data || []).map(async (course: CourseDocument) => {
-        return this.transformCourseGenerale(course);
-      })
-    );
-
-    return {
-      courses: transformedCourses,
-      totalCount: result.totalCount || 0,
-    };
+      const result = aggregationResult[0] || { data: [], totalCount: 0 };
+      // console.log("result", result.data);
+      const transformedCourses = await Promise.all(
+        (result.data || []).map(async (course: CourseDocument) => {
+          return this.transformCourseGenerale(course);
+        })
+      );
+      // console.log("transformedCourses", transformedCourses);
+      return {
+        success: true,
+        courses: transformedCourses,
+        totalCount: result.totalCount || 0,
+      };
+    } catch (error) {
+      console.log(error);
+      return { success: false, message: "No published courses found" };
+    }
 
     // const courses = await Course.find({ isPublished: true }).populate(
     //   "instructor",
@@ -339,18 +370,71 @@ export class CourseService {
     // };
   }
 
-  async findAllByInstructorId(instructorId: mongoose.Types.ObjectId) {
-    const courses = await Course.find({ instructor: instructorId }).populate(
-      "instructor",
-      ["userName", "profileImg", "AboutMe", "speciality"]
-    );
-    if (!courses) {
-      return { success: false, message: "No courses found" };
+  async findAllByInstructorId(
+    instructorId: mongoose.Types.ObjectId,
+    options: FindAllInstructorCoursesOptions
+  ) {
+    const { page, limit, search, sort } = options;
+    try {
+      const courses = await Course.find({ instructor: instructorId }).populate(
+        "instructor",
+        ["userName", "profileImg", "AboutMe", "speciality"]
+      );
+      if (!courses) {
+        return { success: false, message: "No courses found" };
+      }
+      const allTransformedCourses = courses.map((course) =>
+        this.transformInstructor(course)
+      );
+
+      let filteredCourses = allTransformedCourses;
+      if (search && search.trim()) {
+        const searchTerm = search.toLowerCase().trim();
+        filteredCourses = allTransformedCourses.filter(
+          (course) =>
+            course.title.toLowerCase().includes(searchTerm) ||
+            course.category.toLowerCase().includes(searchTerm)
+        );
+      }
+      // Apply sorting
+      const sortedCourses = [...filteredCourses].sort((a, b) => {
+        switch (sort) {
+          case "title":
+            return a.title.localeCompare(b.title);
+
+          case "popularity":
+            return b.students - a.students;
+
+          case "rating":
+            return b.reviews - a.reviews;
+
+          default:
+            return (
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
+        }
+      });
+      const totalCount = sortedCourses.length;
+      const totalPages = Math.ceil(totalCount / limit);
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+
+      const paginatedCourses = sortedCourses.slice(startIndex, endIndex);
+
+      return {
+        success: true,
+        courses: paginatedCourses,
+        currentPage: page,
+        totalPages,
+        totalCourses: totalCount,
+      };
+    } catch (error) {
+      console.error("Error in findAllOverview:", error);
+      return {
+        success: false,
+        message: "Failed to fetch enrollments",
+      };
     }
-    return {
-      success: true,
-      courses: courses.map((course) => this.transformInstructor(course)),
-    };
   }
 
   async findAllByCategoryId(
@@ -378,13 +462,17 @@ export class CourseService {
   async updateOneById(
     userId: mongoose.Types.ObjectId,
     courseId: string,
-    courseDto: CourseDtoWithCoupons
+    courseDto: CourseDtoWithCoupons,
+    userRole: string
   ) {
     const course = await Course.findById(courseId);
     if (!course) {
       return { success: false, message: "Course not found" };
     }
-    if (course.instructor.toString() !== userId.toString()) {
+    if (
+      course.instructor.toString() !== userId.toString() &&
+      userRole !== "admin"
+    ) {
       return { success: false, message: "Permission denied!" };
     }
     const { coupons, ...courseData } = courseDto;
@@ -404,12 +492,19 @@ export class CourseService {
     return { success: true, message: "Course updated successfully!" };
   }
 
-  async deleteOneById(userId: mongoose.Types.ObjectId, courseId: string) {
+  async deleteOneById(
+    userId: mongoose.Types.ObjectId,
+    courseId: string,
+    userRole: string
+  ) {
     const course = await Course.findById(courseId);
     if (!course) {
       return { success: false, message: "Course not found!" };
     }
-    if (course.instructor.toString() !== userId.toString()) {
+    if (
+      course.instructor.toString() !== userId.toString() &&
+      userRole !== "admin"
+    ) {
       return { success: false, message: "Permission denied!" };
     }
     const deletedCourse = await Course.findByIdAndDelete(courseId);
@@ -422,12 +517,19 @@ export class CourseService {
     return { success: true, message: "Course deleted successfully" };
   }
 
-  async publishOneById(userId: mongoose.Types.ObjectId, courseId: string) {
+  async publishOneById(
+    userId: mongoose.Types.ObjectId,
+    courseId: string,
+    userRole: string
+  ) {
     const course = await Course.findById(courseId);
     if (!course) {
       return { success: false, message: "Course not found!" };
     }
-    if (course.instructor.toString() !== userId.toString()) {
+    if (
+      course.instructor.toString() !== userId.toString() &&
+      userRole !== "admin"
+    ) {
       return { success: false, message: "Permission denied!" };
     }
     const publishedCourse = await Course.findByIdAndUpdate(
@@ -442,6 +544,44 @@ export class CourseService {
       };
     }
     return { success: true, message: "Course published successfully" };
+  }
+  async togglePublishStatus(courseId: string): Promise<{
+    success: boolean;
+    message: string;
+    isPublished?: boolean;
+  }> {
+    try {
+      const course = await Course.findById(courseId);
+
+      if (!course) {
+        return { success: false, message: "Course not found." };
+      }
+
+      const newPublishStatus = !course.isPublished;
+
+      course.isPublished = newPublishStatus;
+      await course.save();
+
+      // 6. Return a successful response
+      const message = newPublishStatus
+        ? "Course published successfully."
+        : "Course unpublished successfully.";
+
+      return {
+        success: true,
+        message,
+        isPublished: newPublishStatus,
+      };
+    } catch (error: any) {
+      console.error("Error toggling publish status:", error);
+      // Return a specific error if asset tagging failed, or a generic one otherwise.
+      const errorMessage =
+        error.message === "Failed to update asset tags on the cloud."
+          ? "Failed to update asset tags. The course status was not changed."
+          : "An unexpected error occurred while updating the course status.";
+
+      return { success: false, message: errorMessage };
+    }
   }
 
   async unpublishOneById(userId: mongoose.Types.ObjectId, courseId: string) {
@@ -534,6 +674,120 @@ export class CourseService {
     }
     return { success: false, message: "User is not enrolled in the course" };
   };
+  async getAllCourses(options: GetAllCoursesOptions): Promise<{
+    courses: AugmentedCourse[];
+    totalPages: number;
+    currentPage: number;
+    totalCourses: number;
+  }> {
+    const { page, limit, search, status, category, level, language } = options;
+
+    // 1. Build the dynamic query object
+    const query: any = {};
+    if (status) {
+      query.isPublished = status === "published";
+    }
+    if (category) {
+      // Querying a field within a sub-document
+      query["category.name"] = { $regex: category, $options: "i" };
+    }
+    if (level) {
+      query.level = level;
+    }
+    if (language) {
+      query.language = language;
+    }
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    // 2. Fetch the base course data from the database
+    // We populate the instructor to get their name.
+    const courses = await Course.find(query)
+      .populate<{ instructor: Pick<UserDocument, "userName"> }>(
+        "instructor",
+        "userName" // Select only the userName field from the User document
+      )
+      .limit(limit)
+      .skip((page - 1) * limit)
+      .sort({ createdAt: -1 })
+      .lean() // .lean() for performance and easier object manipulation
+      .exec();
+
+    // 3. Augment the courses with calculated data
+    const augmentedCourses: AugmentedCourse[] = courses.map((course) => {
+      // Calculate Average Rating
+      const totalRating = course.reviews.reduce(
+        (sum, review) => sum + review.rating,
+        0
+      );
+      const averageRating =
+        course.reviews.length > 0
+          ? parseFloat((totalRating / course.reviews.length).toFixed(1))
+          : 0;
+
+      // Get student count
+      const numberOfStudents = course.students?.length || 0;
+
+      // Calculate Revenue
+      const revenue = numberOfStudents * (course.pricing.price || 0);
+
+      return {
+        id: course._id.toString(),
+        title: course.title,
+        numberOfSections: course.sections?.length || 0,
+        category: course.category?.name || "N/A",
+        // The populated instructor is an object, so we access its property
+        instructor: course.instructor?.userName || "N/A",
+        numberOfStudents: numberOfStudents,
+        averageRating: averageRating,
+        revenue: revenue,
+        status: course.isPublished ? "Published" : "Draft",
+        createdAt: course.createdAt,
+      };
+    });
+
+    // 4. Get the total count for pagination
+    const totalCourses = await Course.countDocuments(query);
+
+    // 5. Return the final paginated and augmented result
+    return {
+      courses: augmentedCourses,
+      totalPages: Math.ceil(totalCourses / limit),
+      currentPage: page,
+      totalCourses,
+    };
+  }
+  public async getAllCategories(): Promise<string[]> {
+    const categories = await Course.distinct("category.name");
+    return categories;
+  }
+  async getUsedLanguages(): Promise<{
+    success: boolean;
+    languages?: string[];
+    message?: string;
+  }> {
+    try {
+      const languages = await Course.distinct("language", {
+        isPublished: true,
+      });
+
+      if (!languages) {
+        return { success: false, message: "Could not fetch languages." };
+      }
+
+      return { success: true, languages };
+    } catch (error) {
+      console.error("Error fetching distinct course languages:", error);
+      return {
+        success: false,
+        message: "An error occurred while fetching languages.",
+      };
+    }
+  }
 
   private transformCourse(
     course: CourseDocument,

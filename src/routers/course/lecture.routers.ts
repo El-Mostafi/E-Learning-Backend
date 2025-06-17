@@ -8,7 +8,10 @@ import { NextFunction, Request, Response, Router } from "express";
 import { body } from "express-validator";
 import { LectureService } from "../../service/course/lecture.service";
 import { LectureDto } from "./dtos/course.dto";
-import { roleIsInstructor } from "../../../common/src/middllewares/validate-roles";
+import {
+  roleIsInstructor,
+  roleIsInstructorOrAdmin,
+} from "../../../common/src/middllewares/validate-roles";
 
 const router = Router();
 
@@ -72,10 +75,11 @@ router.post(
   ValidationRequest,
   requireAuth,
   currentUser,
-  roleIsInstructor,
+  roleIsInstructorOrAdmin,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.currentUser!.userId;
+      const userRole = req.currentUser!.role;
       const courseId = req.params.id;
       const sectionId = req.params.sectionId;
       const lectureDto: LectureDto = req.body;
@@ -83,7 +87,8 @@ router.post(
         userId,
         courseId,
         sectionId,
-        lectureDto
+        lectureDto,
+        userRole
       );
       if (!result.success) {
         return next(new BadRequestError(result.message));
@@ -112,20 +117,22 @@ router.put(
   ValidationRequest,
   requireAuth,
   currentUser,
-  roleIsInstructor,
+  roleIsInstructorOrAdmin,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.currentUser!.userId;
+      const userRole = req.currentUser!.role;
       const courseId = req.params.id;
       const sectionId = req.params.sectionId;
       const lectureId = req.params.lectureId;
-      const lectureDto = req.body as LectureDto ;
+      const lectureDto = req.body as LectureDto;
       const result = await lectureService.update(
         userId,
         courseId,
         sectionId,
         lectureId,
-        lectureDto
+        lectureDto,
+        userRole
       );
       if (!result.success) {
         return next(new BadRequestError(result.message));
@@ -144,10 +151,11 @@ router.delete(
   "/api/courses/:id/sections/:sectionId/lectures/:lectureId/delete-lecture",
   requireAuth,
   currentUser,
-  roleIsInstructor,
+  roleIsInstructorOrAdmin,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.currentUser!.userId;
+      const userRole = req.currentUser!.role;
       const courseId = req.params.id;
       const sectionId = req.params.sectionId;
       const lectureId = req.params.lectureId;
@@ -155,7 +163,8 @@ router.delete(
         userId,
         courseId,
         sectionId,
-        lectureId
+        lectureId,
+        userRole
       );
       if (!result.success) {
         return next(new BadRequestError(result.message));

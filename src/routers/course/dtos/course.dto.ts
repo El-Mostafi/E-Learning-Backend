@@ -56,3 +56,49 @@ export interface CourseDto {
 export interface CourseDtoWithCoupons extends CourseDto {
   coupons: Coupons[];
 }
+export interface GetAllCoursesOptions {
+  page: number;
+  limit: number;
+  search?: string;
+  status?: "published" | "draft";
+  category?: string;
+  level?: string;
+  language?: string;
+}
+
+// This will be the structure of each course object returned by the service
+export interface AugmentedCourse {
+  id: string;
+  title: string;
+  numberOfSections: number;
+  category: string;
+  instructor: string;
+  numberOfStudents: number;
+  averageRating: number;
+  revenue: number;
+  status: "Published" | "Draft";
+  createdAt: Date;
+}
+export type InstructorCoursesSortOption = "newest" | "title" | "popularity" | "rating";
+
+export interface FindAllInstructorCoursesOptions {
+  page: number;
+  limit: number;
+  search?: string;
+  sort: InstructorCoursesSortOption;
+}
+
+export interface CreateCouponDto {
+  courseId: string;
+  code: string;
+  discountPercentage: number;
+  maxUses: number;
+  expiryDate: Date;
+}
+
+export interface UpdateCouponDto {
+  code?: string;
+  discountPercentage?: number;
+  maxUses?: number;
+  expiryDate?: Date;
+}

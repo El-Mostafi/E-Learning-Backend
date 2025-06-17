@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import reviewSchema, { Review } from "./schemas/review";
-import certificateSchema, { Certificate } from "./schemas/certificate";
+import certificateSchema, { CertificateDocument } from "./schemas/certificate";
 import categorySchema, { Category } from "./schemas/category";
 import { CourseDto } from "../routers/course/dtos/course.dto";
 
@@ -8,6 +8,7 @@ export enum Level {
   Beginner = "Beginner",
   Intermediate = "Intermediate",
   Advanced = "Advanced",
+  All_Levels = "All Levels",
 }
 
 export enum Language {
@@ -17,6 +18,7 @@ export enum Language {
   French = "French",
   German = "German",
   Italian = "Italian",
+  Chinese = "Chinese",
 }
 
 export interface Lecture extends mongoose.Document {
@@ -156,7 +158,7 @@ const couponSchema = new mongoose.Schema<Coupon>({
     category: Category;
     reviews: mongoose.Types.DocumentArray<Review>;
     sections: mongoose.Types.DocumentArray<Section>;
-    certificates: mongoose.Types.DocumentArray<Certificate>;
+    certificates: mongoose.Types.DocumentArray<CertificateDocument>;
     quizQuestions: mongoose.Types.DocumentArray<Exam>;
     coupons: mongoose.Types.DocumentArray<Coupon>;
     instructor: mongoose.Types.ObjectId;

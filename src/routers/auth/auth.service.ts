@@ -1,7 +1,7 @@
 import { UserService, userService } from "../../service/user.service";
 import { emailSenderService } from "../../service/EmailSender.service";
 import { userOTPVerificationService } from "../../service/userOTPVerification.service";
-import { AuthDto, CreateUserDto, updateData } from './dtos/auth.dto';
+import { AuthDto, CreateUserDto, updateData } from "./dtos/auth.dto";
 import { AuthenticationService } from "../../../common";
 import UserOTPVerification from "../../models/userOTPVerification";
 import jwt from "jsonwebtoken";
@@ -28,7 +28,6 @@ export class AuthService {
       password: createUserDto.password,
       userName: createUserDto.userName,
       role: createUserDto.role,
-      aboutMe: createUserDto.AboutMe,
       RememberMe: false,
       ...(createUserDto.role === "student" && {
         educationLevel: createUserDto.educationLevel,
@@ -61,7 +60,9 @@ export class AuthService {
     // console.log(samePwd);
 
     if (!samePwd) return { message: "wrong credentials" };
-
+    if(user.status == "blocked") return { message: "Your account is blocked" };
+    user.lastLogin = new Date();
+    await user.save();
     const jwt = this.authenticationService.generateJwt(
       {
         email: user.email,
@@ -70,6 +71,8 @@ export class AuthService {
         emailConfirmed: user.emailConfirmed,
         profileImg: user.profileImg,
         role: user.role,
+        status: user.status,
+        lastLogin: user.lastLogin,
         expertise: user.expertise,
         yearsOfExperience: user.yearsOfExperience,
         biography: user.biography,
@@ -204,6 +207,7 @@ export class AuthService {
     );
     if (user) {
       user.emailConfirmed = true;
+      user.lastLogin = new Date();
       await user.save();
       const jwt = this.authenticationService.generateJwt(
         {
@@ -213,6 +217,8 @@ export class AuthService {
           emailConfirmed: user.emailConfirmed,
           profileImg: user.profileImg,
           role: user.role,
+          status: user.status,
+          lastLogin: user.lastLogin ,
           expertise: user.expertise,
           yearsOfExperience: user.yearsOfExperience,
           biography: user.biography,
@@ -333,7 +339,9 @@ export class AuthService {
       // };
 
       if (updateData.userName) {
-        const existingUsername = await userService.findOneByUserName(updateData.userName);
+        const existingUsername = await userService.findOneByUserName(
+          updateData.userName
+        );
         if (existingUsername && existingUsername.id !== userId) {
           return { message: "Username is already taken", success: false };
         }
@@ -341,7 +349,6 @@ export class AuthService {
 
       if (!updateData.profileImg) updateData.profileImg = "";
       if (!updateData.publicId) updateData.publicId = "";
-
 
       const updatedUser = await userService.updateUser(userId, updateData);
 
@@ -356,6 +363,8 @@ export class AuthService {
           emailConfirmed: updatedUser.emailConfirmed,
           profileImg: updatedUser.profileImg,
           role: updatedUser.role,
+          status: updatedUser.status,
+          lastLogin: updatedUser.lastLogin,
           expertise: updatedUser.expertise,
           yearsOfExperience: updatedUser.yearsOfExperience,
           biography: updatedUser.biography,

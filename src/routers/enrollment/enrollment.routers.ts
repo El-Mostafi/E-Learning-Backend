@@ -3,35 +3,54 @@ import { NextFunction, Request, Response, Router } from "express";
 import { EnrollmentService } from "../../service/enrollment/enrollment.service";
 import mongoose, { trusted } from "mongoose";
 import { roleIsStudent } from "../../../common/src/middllewares/validate-roles";
+import { EnrolledCoursesSortOption, FindAllEnrollmentsOptions } from "./dtos/enrollement.dto";
 
 const router = Router();
 const enrollmentService = new EnrollmentService();
 
-router.post(
-  "/api/courses/:courseId/enroll",
+// router.post(
+//   "/api/courses/:courseId/enroll",
+//   requireAuth,
+//   currentUser,
+//   roleIsStudent,
+//   async (req: Request, res: Response, next: NextFunction) => {
+//     const session = await mongoose.startSession();
+//     try {
+//       await session.withTransaction(async () => {
+//         const userId = req.currentUser!.userId;
+//         const courseId = new mongoose.Types.ObjectId(req.params.courseId);
+//         const result = await enrollmentService.enroll(courseId, userId, session);
+//         if (!result.success) {
+//           throw new BadRequestError(result.message!);
+//         }
+//         res.status(200).send(result.message!);
+//       });
+//     } catch (error: any) {
+//       next(error);
+//     } finally {
+//       await session.endSession();
+//     }
+//   }
+// );
+
+router.get(
+  "/api/my-courses/overview",
   requireAuth,
   currentUser,
   roleIsStudent,
   async (req: Request, res: Response, next: NextFunction) => {
-    const session = await mongoose.startSession();
     try {
-      await session.withTransaction(async () => {
-        const userId = req.currentUser!.userId;
-        const courseId = new mongoose.Types.ObjectId(req.params.courseId);
-        const result = await enrollmentService.enroll(courseId, userId, session);
-        if (!result.success) {
-          throw new BadRequestError(result.message!);
-        }
-        res.status(200).send(result.message!);
-      });
-    } catch (error: any) {
+      const userId = req.currentUser!.userId;
+      const result = await enrollmentService.findAllOverview(userId);
+      if (!result.success) {
+        return next(new BadRequestError(result.message!));
+      }
+      res.status(200).send(result.courses);
+    } catch (error) {
       next(error);
-    } finally {
-      await session.endSession();
     }
   }
 );
-
 router.get(
   "/api/my-courses/enrolled",
   requireAuth,
@@ -39,12 +58,29 @@ router.get(
   roleIsStudent,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.currentUser!.userId;
-      const result = await enrollmentService.findAll(userId);
-      if (!result.success) {
-        return next(new BadRequestError(result.message!));
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const search = req.query.search as string | undefined;
+      const sort = (req.query.sort as EnrolledCoursesSortOption) || "newest";
+
+      const validSortOptions: EnrolledCoursesSortOption[] = ["newest", "title", "progress", "rating"];
+      if (!validSortOptions.includes(sort)) {
+          return next(new BadRequestError("Invalid sort option."));
       }
-      res.status(200).send(result.courses);
+      
+      const options: FindAllEnrollmentsOptions = {
+        page,
+        limit,
+        search,
+        sort,
+      };
+
+      const userId = req.currentUser!.userId;
+
+      const result = await enrollmentService.findAll(userId, options);
+
+
+      res.status(200).send(result);
     } catch (error) {
       next(error);
     }

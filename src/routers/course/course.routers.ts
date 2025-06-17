@@ -1,6 +1,6 @@
 import { NextFunction, Router, Request, Response } from "express";
-import { body } from "express-validator";
-import { CourseDto, CourseDtoWithCoupons } from "./dtos/course.dto";
+import { body, query } from "express-validator";
+import { CourseDto, CourseDtoWithCoupons, FindAllInstructorCoursesOptions, InstructorCoursesSortOption } from "./dtos/course.dto";
 import { CourseService } from "../../service/course/course.service";
 import {
   BadRequestError,
@@ -11,10 +11,14 @@ import {
   deleteVideosImageInCourse,
 } from "../../../common";
 import {
+  roleIsAdmin,
   roleIsInstructor,
+  roleIsInstructorOrAdmin,
   roleIsStudent,
 } from "../../../common/src/middllewares/validate-roles";
 import mongoose from "mongoose";
+import { Level, Language } from "../../models/course";
+import { UserRole } from "../../models/user";
 
 const router = Router();
 const courseService = new CourseService();
@@ -42,7 +46,9 @@ router.get(
         sortOption,
         filterParams
       );
-      console.log("Hello from there!")
+      if (!result.success) {
+        return next(new BadRequestError(result.message!));
+      }
       res.status(200).send(result);
     } catch (error) {
       console.log(error)
@@ -50,7 +56,80 @@ router.get(
     }
   }
 );
+router.get(
+  "/api/courses/overview",
+  requireAuth,
+  currentUser,
+  roleIsAdmin, // Assuming only admins can see this overview
+  [
+    query("page")
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage("Page must be a positive integer."),
+    query("limit")
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage("Limit must be a positive integer."),
+    query("status")
+      .optional()
+      .isIn(["published", "draft"])
+      .withMessage("Invalid status. Must be 'published' or 'draft'."),
+    query("search").optional().isString().trim(),
+    query("category").optional().isString().trim(),
+    query("level")
+      .optional()
+      .isIn(Object.values(Level))
+      .withMessage("Invalid course level."),
+    query("language")
+      .optional()
+      .isIn(Object.values(Language))
+      .withMessage("Invalid course language."),
+  ],
+  ValidationRequest,
+  async (req: Request, res: Response) => {
+    const options = {
+      page: parseInt(req.query.page as string) || 1,
+      limit: parseInt(req.query.limit as string) || 10,
+      search: req.query.search as string | undefined,
+      status: req.query.status as "published" | "draft" | undefined,
+      category: req.query.category as string | undefined,
+      level: req.query.level as string | undefined,
+      language: req.query.language as string | undefined,
+    };
 
+    const result = await courseService.getAllCourses(options);
+
+    res.status(200).send(result);
+  }
+);
+router.get(
+  "/api/courses/categories",
+
+  async (req: Request, res: Response) => {
+    try {
+      const categories = await courseService.getAllCategories();
+      res.status(200).send(categories);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+      res.status(500).send({ message: "Error fetching categories" });
+    }
+  }
+);
+router.get(
+  "/api/courses/languages",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      console.log("Fetching distinct course languages...");
+      const result = await courseService.getUsedLanguages();
+      if (!result.success) {
+        return next(new BadRequestError(result.message!));
+      }
+      res.status(200).send(result.languages);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 router.get(
   "/api/courses/:courseId",
   currentUser,
@@ -72,12 +151,17 @@ router.get(
   "/api/courses/:id/update-course",
   requireAuth,
   currentUser,
-  roleIsInstructor,
+  roleIsInstructorOrAdmin,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const courseId = req.params.id;
       const userId = req.currentUser!.userId;
-      const result = await courseService.findOneByIdForUpdate(userId, courseId);
+      const userRole = req.currentUser!.role;
+      const result = await courseService.findOneByIdForUpdate(
+        userId,
+        courseId,
+        userRole
+      );
       if (!result.success) {
         return next(new BadRequestError(result.message!));
       }
@@ -113,16 +197,43 @@ router.get(
   requireAuth,
   currentUser,
   roleIsInstructor,
+  [
+      body("page")
+        .optional()
+        .isInt({ min: 1 })
+        .withMessage("Page must be a positive integer."),
+      body("limit")
+        .optional()
+        .isInt({ min: 1 })
+        .withMessage("Limit must be a positive integer."),
+      body("sort")
+        .optional()
+        .isIn(["title","newest", "popularity","rating"])
+        .withMessage("Invalid role."),
+      body("search").optional().isString().trim(),
+    ],
+    ValidationRequest,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const instructorId = req.currentUser!.userId;
-      const result = await courseService.findAllByInstructorId(instructorId);
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const search = req.query.search as string | undefined;
+      const sort = (req.query.sort as InstructorCoursesSortOption) || "newest";
+
+      const options: FindAllInstructorCoursesOptions = {
+        page,
+        limit,
+        search,
+        sort,
+      };
+      const result = await courseService.findAllByInstructorId(instructorId, options);
 
       if (!result.success) {
         return next(new BadRequestError(result.message!));
       }
 
-      res.status(200).send(result.courses!);
+      res.status(200).send(result);
     } catch (error) {
       next(error);
     }
@@ -171,7 +282,7 @@ router.post(
   ValidationRequest,
   requireAuth,
   currentUser,
-  roleIsInstructor,
+  roleIsInstructorOrAdmin,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const courseDto = req.body as CourseDtoWithCoupons;
@@ -235,16 +346,18 @@ router.put(
   ValidationRequest,
   requireAuth,
   currentUser,
-  roleIsInstructor,
+  roleIsInstructorOrAdmin,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.currentUser!.userId;
+      const userRole = req.currentUser!.role;
       const courseId = req.params.id;
       const courseDto = req.body as CourseDtoWithCoupons;
       const result = await courseService.updateOneById(
         userId,
         courseId,
-        courseDto
+        courseDto,
+        userRole
       );
       if (!result.success) {
         return next(new BadRequestError(result.message));
@@ -270,13 +383,18 @@ router.put(
   ],
   requireAuth,
   currentUser,
-  roleIsInstructor,
+  roleIsInstructorOrAdmin,
   updateFileTags,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.currentUser!.userId;
+      const UserRole = req.currentUser!.role;
       const courseId = req.params.id;
-      const result = await courseService.publishOneById(userId, courseId);
+      const result = await courseService.publishOneById(
+        userId,
+        courseId,
+        UserRole
+      );
       if (!result.success) {
         return next(new BadRequestError(result.message));
       }
@@ -286,12 +404,34 @@ router.put(
     }
   }
 );
+router.put(
+  "/api/courses/:id/toggle-publish",
+  requireAuth,
+  currentUser,
+  roleIsAdmin,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const courseId = req.params.id;
+      const result = await courseService.togglePublishStatus(courseId);
 
+      if (!result.success) {
+        return next(new BadRequestError(result.message));
+      }
+      res.status(200).send({
+        success: true,
+        message: result.message,
+        isPublished: result.isPublished,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 router.put(
   "/api/courses/:id/unpublish",
   requireAuth,
   currentUser,
-  roleIsInstructor,
+  roleIsInstructorOrAdmin,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.currentUser!.userId;
@@ -311,13 +451,14 @@ router.delete(
   "/api/courses/delete/:id",
   requireAuth,
   currentUser,
-  roleIsInstructor,
+  roleIsInstructorOrAdmin,
   deleteVideosImageInCourse,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.currentUser!.userId;
+      const UserRole = req.currentUser!.role;
       const courseId = req.params.id;
-      const result = await courseService.deleteOneById(userId, courseId);
+      const result = await courseService.deleteOneById(userId, courseId, UserRole);
       if (!result.success) {
         return next(new BadRequestError(result.message));
       }
@@ -375,5 +516,6 @@ router.get(
     }
   }
 );
+
 
 export { router as courseRouter };

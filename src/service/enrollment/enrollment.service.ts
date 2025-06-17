@@ -4,7 +4,11 @@ import mongoose, { now } from "mongoose";
 import Enrollment, { EnrollmentDocument } from "../../models/enrollment";
 import { courseData, courseStudent } from "Helpers/course/course.data";
 import { ClientSession } from "mongoose";
-import { EnrollmentInterface } from "src/routers/enrollment/dtos/enrollement.dto";
+import {
+  courseStudentTable,
+  EnrollmentInterface,
+  FindAllEnrollmentsOptions,
+} from "../../routers/enrollment/dtos/enrollement.dto";
 
 export class EnrollmentService {
   constructor() {}
@@ -59,7 +63,7 @@ export class EnrollmentService {
     return { success: true, message: "Participant Enrolled Successfully!" };
   }
 
-  async findAll(userId: mongoose.Types.ObjectId) {
+  async findAllOverview(userId: mongoose.Types.ObjectId) {
     const enrollments = await Enrollment.find({ participant: userId });
 
     if (enrollments.length === 0) {
@@ -69,20 +73,127 @@ export class EnrollmentService {
     const transformedCourses = (
       await Promise.all(
         enrollments.map(async (enrollment) => {
-          const course = await Course.findById(enrollment.course).populate(
-            "instructor",
-            ["userName", "profileImg"]
-          );
+          const course = await Course.findById(enrollment.course)
           if (!course) return null;
-          return this.transformCourseGenerale(course, enrollment);
+          return {
+            id: course._id,
+            title: course.title,
+            thumbnailPreview: course.thumbnailPreview,
+            progress: enrollment.progress,
+            completed: enrollment.completed,
+          };
         })
       )
-    ).filter((course): course is courseStudent => course !== null);
+    ).filter((course): course is courseStudentTable => course !== null);
     return {
       success: true,
       courses: transformedCourses,
     };
   }
+  async findAll(
+    userId: mongoose.Types.ObjectId,
+    options: FindAllEnrollmentsOptions
+  ) {
+    const { page, limit, search, sort } = options;
+
+    try {
+      let enrollmentQuery = Enrollment.find({ participant: userId });
+
+      const enrollments = await enrollmentQuery.exec();
+
+      if (enrollments.length === 0) {
+        return {
+          success: false,
+          message: "No enrollment found",
+          courses: [],
+          totalCourses: 0,
+          currentPage: page,
+          totalPages: 0,
+        };
+      }
+      // Transform all courses first
+      const allTransformedCourses = (
+        await Promise.all(
+          enrollments.map(async (enrollment) => {
+            const course = await Course.findById(enrollment.course).populate(
+              "instructor",
+              ["userName", "profileImg"]
+            );
+            if (!course) return null;
+            return this.transformCourseGenerale(course, enrollment);
+          })
+        )
+      ).filter((course): course is courseStudent => course !== null);
+
+      // Apply search filter if provided
+      let filteredCourses = allTransformedCourses;
+      if (search && search.trim()) {
+        const searchTerm = search.toLowerCase().trim();
+        filteredCourses = allTransformedCourses.filter(
+          (course) =>
+            course.title.toLowerCase().includes(searchTerm) ||
+            course.description.toLowerCase().includes(searchTerm) ||
+            course.category.toLowerCase().includes(searchTerm) ||
+            (course.instructorName &&
+              course.instructorName.toLowerCase().includes(searchTerm))
+        );
+      }
+      // Apply sorting
+      const sortedCourses = [...filteredCourses].sort((a, b) => {
+        switch (sort) {
+          case "newest":
+            return (
+              new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime()
+            );
+
+          case "title":
+            return a.title.localeCompare(b.title);
+
+          case "progress":
+            if (a.progress !== b.progress) {
+              return b.progress - a.progress;
+            }
+            if (a.completed !== b.completed) {
+              return a.completed ? -1 : 1;
+            }
+            return 0;
+
+          case "rating":
+            return b.reviews - a.reviews;
+
+          default:
+            return 0;
+        }
+      });
+      const totalCount = sortedCourses.length;
+      const totalPages = Math.ceil(totalCount / limit);
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+
+      const paginatedCourses = sortedCourses.slice(startIndex, endIndex);
+
+      return {
+        success: true,
+        courses: paginatedCourses,
+        currentPage: page,
+        totalPages,
+        totalCourses: totalCount,
+      }
+    } catch (error) {
+      console.error("Error in findAllOverview:", error);
+      return {
+        success: false,
+        message: "Failed to fetch enrollments",
+        courses: [],
+        currentPage: page,
+        totalPages: 0,
+        totalCourses: 0,
+      };
+    }
+  }
+
+  // Helper method for getting count with search
+  
 
   async findOneById(userId: mongoose.Types.ObjectId, courseId: string) {
     const enrollment: EnrollmentInterface | null = await Enrollment.findOne({
