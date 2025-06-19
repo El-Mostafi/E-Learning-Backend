@@ -1,6 +1,6 @@
 // services/student.service.ts
 import mongoose from "mongoose";
-import { NotFoundError } from "../../common";
+import { BadRequestError, NotFoundError } from "../../common";
 import User, { UserDocument } from "../models/user";
 import { StudentStats } from "../routers/student/dtos/student.dtos";
 import Enrollment, { EnrollmentDocument } from "../models/enrollment";
@@ -10,7 +10,26 @@ export class StudentService {
   async getDashboardStats(
     studentId: mongoose.Types.ObjectId
   ): Promise<StudentStats> {
-    const studentObjectId = studentId;
+    try{
+      const studentObjectId = studentId;
+    const student = await User.findById(studentObjectId);
+    if (!student) {
+      throw new BadRequestError("Student not found");
+    }
+
+    if (student.role !== "student") {
+      throw new BadRequestError("User is not a student");
+    }
+
+    const studentStats: StudentStats = {
+      totalTimeLearned: 0,
+      coursesCompleted: 0,
+      activeCourses: 0,
+      certificatesIssued: 0,
+      monthlyProgress: []
+    };
+    studentStats.certificatesIssued = student.certificates.length;
+
 
     // 1. Get all courses created by the instructor and collect their IDs
     // Get all enrollments for the student
@@ -22,7 +41,8 @@ export class StudentService {
           select: "userName",
         },
       })
-      .sort({ startedAt: -1 });
+      .sort({ startedAt: -1, completedAt: -1 });
+    console.log("enrollments :", enrollments);
 
     // Calculate total hours learned
     let totalTimeLearned = 0;
@@ -34,8 +54,8 @@ export class StudentService {
             // Check if this lecture is completed
             const isLectureCompleted = enrollment.completedSections.some(
               (cs) =>
-                cs.sectionId.toString() === section._id.toString() &&
-                cs.lectureId.toString() === lecture._id.toString()
+                cs.sectionId?.toString() === section._id.toString() &&
+                cs.lectureId?.toString() === lecture._id.toString()
             );
             if (isLectureCompleted) {
               totalTimeLearned += lecture.duration ; 
@@ -46,18 +66,16 @@ export class StudentService {
     }
 
     // Count completed and active courses
-    const completedCourses = enrollments.filter((e) => e.completed).length;
-    const activeCourses = enrollments.filter((e) => !e.completed).length;
-
+    studentStats.coursesCompleted = enrollments.filter((e) => e.completed).length;
+    studentStats.activeCourses = enrollments.filter((e) => !e.completed).length;
+    studentStats.totalTimeLearned = totalTimeLearned;
     // Calculate monthly progress for the chart
-    const monthlyProgress = this.calculateMonthlyProgress(enrollments);
+    studentStats.monthlyProgress = this.calculateMonthlyProgress(enrollments);
 
-    return {
-      totalTimeLearned: totalTimeLearned, // Round to 1 decimal
-      coursesCompleted: completedCourses,
-      activeCourses: activeCourses,
-      monthlyProgress,
-    };
+    return studentStats;
+    }catch(e){
+      throw new BadRequestError("Something went wrong while getting student stats");
+    }
   }
   private calculateMonthlyProgress(enrollments: EnrollmentDocument[]) {
     const months = [
