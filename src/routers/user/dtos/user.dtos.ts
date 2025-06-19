@@ -26,6 +26,7 @@ export interface UserToEdit{
   id: string;
   userName: string;
   email: string;
+  profileImg: string;
   role: UserRole;
   status: "active" | "blocked";
   // Student fields
@@ -36,3 +37,4 @@ export interface UserToEdit{
   yearsOfExperience: number;
   biography: string;
 }
+
