@@ -6,7 +6,7 @@ import {
   requireAuth,
   
 } from "../../../common";
-import { requireOwnership } from "../../../common/src/middllewares/require-ownership";
+import {  requireOwnershipOrAdmin } from "../../../common/src/middllewares/require-ownership";
 
 
 cloudinary.config({
@@ -85,7 +85,7 @@ router.delete(
   "/api/delete/:type(video|image)/:publicId",
   requireAuth,
   currentUser,
-  requireOwnership,
+  requireOwnershipOrAdmin,
   async (req: Request, res: Response, next: NextFunction) => {
     const { type, publicId } = req.params;
 
