@@ -26,9 +26,10 @@ import { cartRouters } from "./routers/cart/cart.routers";
 import { reviewRouters } from "./routers/review/review.routers";
 import { popularityRouters } from "./routers/popularity/popularity.routers";
 import { trendingRouters } from "./routers/trending/trending.routers";
-import {userRouters} from "./routers/user/users.routers"
-import {adminRouters} from "./routers/admin/admin.routers"
-import {couponRouters} from "./routers/course/coupon.routers"
+import { userRouters } from "./routers/user/users.routers";
+import { adminRouters } from "./routers/admin/admin.routers";
+import { couponRouters } from "./routers/course/coupon.routers";
+import { recomendationRouter } from "./routers/recomendation/recomendation.routers";
 
 export class AppModule {
   constructor(public app: Application) {
@@ -66,7 +67,7 @@ export class AppModule {
     }
     // this.app.use(currentUser);
 
-    this.app.use(couponRouters)
+    this.app.use(couponRouters);
     this.app.use(studentRouters);
     this.app.use(courseRouter);
     this.app.use(sectionRouter);
@@ -79,10 +80,11 @@ export class AppModule {
     this.app.use(instructorRouters);
     this.app.use(cartRouters);
     this.app.use(reviewRouters);
-    this.app.use(popularityRouters)
-    this.app.use(trendingRouters)
-    this.app.use(userRouters)
-    this.app.use(adminRouters)
+    this.app.use(popularityRouters);
+    this.app.use(trendingRouters);
+    this.app.use(userRouters);
+    this.app.use(adminRouters);
+    this.app.use(recomendationRouter);
 
     this.app.all("*", (req, res, next) => {
       next(new NotFoundError());
