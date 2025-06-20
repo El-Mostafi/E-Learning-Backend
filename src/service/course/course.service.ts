@@ -735,7 +735,7 @@ export class CourseService {
       )
       .limit(limit)
       .skip((page - 1) * limit)
-      .sort({ createdAt: -1 })
+      .sort({ createdAt: -1 , _id: -1})
       .lean() // .lean() for performance and easier object manipulation
       .exec();
 

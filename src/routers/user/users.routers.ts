@@ -46,6 +46,7 @@ router.get(
       status: req.query.status as string | undefined,
       search: req.query.search as string | undefined,
     };
+    console.log(" options :",options);
 
     const result = await userService.getAllUsers(options);
     res.status(200).send(result);
@@ -213,6 +214,10 @@ router.put(
       .optional()
       .isString()
       .withMessage("biography must be a string"),
+    body("profileImg")
+          .optional()
+          .isURL()
+          .withMessage("Profile image must be a valid URL"),
   ],
   ValidationRequest,
   async (req: Request, res: Response, next: NextFunction) => {
