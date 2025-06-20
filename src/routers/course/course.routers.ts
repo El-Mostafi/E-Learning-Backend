@@ -517,5 +517,16 @@ router.get(
   }
 );
 
+router.get(
+  "/api/courses/published/count",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const count = await courseService.getPublishedCoursesCount();
+      res.status(200).send({ count });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 export { router as courseRouter };

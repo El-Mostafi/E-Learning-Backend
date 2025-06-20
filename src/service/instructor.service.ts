@@ -131,5 +131,71 @@ export class InstructorService {
 
     return enrollmentsByMonth;
   }
+
+
+  async getTopInstructors(limit: number = 5): Promise<any[]> { // Return type is now 'any' or a custom DTO
+    const instructors = await User.aggregate([
+      // Stage 1: Filter for active, confirmed instructors
+      { $match: { role: "instructor", emailConfirmed: true, status: "active" } },
+
+      // Stage 2: Lookup their courses to perform calculations
+      {
+        $lookup: {
+          from: "courses",
+          localField: "_id",
+          foreignField: "instructor",
+          as: "courses",
+        },
+      },
+
+      // Stage 3: Flatten the nested review arrays for accurate averaging
+      {
+        $addFields: {
+          allReviews: {
+            $reduce: {
+              input: "$courses.reviews",
+              initialValue: [],
+              in: { $concatArrays: ["$$value", "$$this"] }
+            }
+          }
+        }
+      },
+      
+      // Stage 4: Calculate course count and average rating
+      {
+          $addFields: {
+              courseCount: { $size: "$courses" },
+              // $avg on an empty array correctly returns null
+              averageRating: { $avg: "$allReviews.rating" }, 
+          }
+      },
+
+      // Stage 5: Sort by the desired criteria
+      { $sort: { courseCount: -1, averageRating: -1 } },
+
+      // Stage 6: Limit the results
+      { $limit: limit },
+
+      // --- STAGE 7: PROJECT THE FINAL SHAPE (The Solution) ---
+      // Specify only the fields you want to send to the front end.
+      {
+        $project: {
+            // User fields to keep
+            userName: 1,      // 1 means "include this field"
+            profileImg: 1,
+            biography: 1,     // Biography might be nice for a "top instructors" card
+            
+            // Calculated fields to keep
+            courseCount: 1,
+            averageRating: { $ifNull: [ "$averageRating", 0 ] }, // Show 0 instead of null for rating
+
+            // _id is included by default, no need to specify it.
+            // All other fields (like 'password', 'email', and especially the large 'courses' and 'allReviews' arrays) are DISCARDED.
+        }
+      }
+    ]);
+
+    return instructors;
+  }
 }
 export const instructorService = new InstructorService();

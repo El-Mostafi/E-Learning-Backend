@@ -65,4 +65,19 @@ router.get(
   }
 );
 
+router.get(
+  "/api/top-instructors",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const topInstructors = await instructorService.getTopInstructors();
+      if (topInstructors.length === 0) {
+        return next(new BadRequestError("No top instructors found"));
+      }
+      res.status(200).json(topInstructors);
+    } catch (error) {
+      next(error);
+    }
+  }
+)
+
 export { router as instructorRouters };

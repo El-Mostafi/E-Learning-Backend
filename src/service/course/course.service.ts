@@ -38,6 +38,12 @@ export class CourseService {
     };
   }
 
+  async getPublishedCoursesCount(): Promise<number> {
+    const query: any = {};
+    query.isPublished = true;
+    return Course.countDocuments(query);
+  }
+
   async findAll(userId: mongoose.Types.ObjectId | undefined) {
     const courses = await Course.find().populate("instructor", [
       "userName",
@@ -477,19 +483,19 @@ export class CourseService {
       ) {
         return { success: false, message: "Permission denied!" };
       }
-      
+
       const updateData = {
-        ...courseDto, 
-        sections: [], 
-        quizQuestions: [], 
+        ...courseDto,
+        sections: [],
+        quizQuestions: [],
       };
 
       const updatedCourse = await Course.findByIdAndUpdate(
         courseId,
-        updateData, 
+        updateData,
         {
-          new: true, 
-          runValidators: true, 
+          new: true,
+          runValidators: true,
         }
       );
 
@@ -961,47 +967,51 @@ export class CourseService {
   }
 
   private transformCourseGenerale(course: CourseDocument): courseDataGenerale {
-    try{
-    const totalRating = course.reviews.reduce(
-      (sum, review) => sum + review.rating,
-      0
-    );
-    const averageRating = course.reviews.length
-      ? totalRating / course.reviews.length
-      : 0;
-    const totaleDuration = course.sections.reduce(
-      (total: number, section: Section) => {
-        return (
-          total +
-          section.lectures.reduce((sectionTotal: number, lecture: Lecture) => {
-            return sectionTotal + lecture.duration;
-          }, 0)
-        );
-      },
-      0
-    );
-    return {
-      id: (course._id as mongoose.Types.ObjectId).toString() || "",
-      title: course.title || "",
-      description: course.description || "",
-      language: course.language || "",
-      thumbnailPreview: course.thumbnailPreview || "",
-      category: course.category.name || "",
-      level: course.level  || "",
-      price: course.pricing.price  || 0,
-      reviews: averageRating || 0,
-      duration: totaleDuration || 0,
-      students: course.students.length || 0,
-      instructorName: (course.instructor as any)?.userName || "Unknown Instructor",
-      instructorImg: (course.instructor as any)?.profileImg || "",
-      InstructorId: (course.instructor as any)?.id || "",
-      createdAt: course.createdAt || "",
-    };
-  } catch (error) {
-    console.log(error)
-    console.log("CourseTRy",course)
-    return {} as courseDataGenerale;
-  }
+    try {
+      const totalRating = course.reviews.reduce(
+        (sum, review) => sum + review.rating,
+        0
+      );
+      const averageRating = course.reviews.length
+        ? totalRating / course.reviews.length
+        : 0;
+      const totaleDuration = course.sections.reduce(
+        (total: number, section: Section) => {
+          return (
+            total +
+            section.lectures.reduce(
+              (sectionTotal: number, lecture: Lecture) => {
+                return sectionTotal + lecture.duration;
+              },
+              0
+            )
+          );
+        },
+        0
+      );
+      return {
+        id: (course._id as mongoose.Types.ObjectId).toString() || "",
+        title: course.title || "",
+        description: course.description || "",
+        language: course.language || "",
+        thumbnailPreview: course.thumbnailPreview || "",
+        category: course.category.name || "",
+        level: course.level || "",
+        price: course.pricing.price || 0,
+        reviews: averageRating || 0,
+        duration: totaleDuration || 0,
+        students: course.students.length || 0,
+        instructorName:
+          (course.instructor as any)?.userName || "Unknown Instructor",
+        instructorImg: (course.instructor as any)?.profileImg || "",
+        InstructorId: (course.instructor as any)?.id || "",
+        createdAt: course.createdAt || "",
+      };
+    } catch (error) {
+      console.log(error);
+      console.log("CourseTRy", course);
+      return {} as courseDataGenerale;
+    }
   }
   private transformCourseDetails(
     course: CourseDocument,

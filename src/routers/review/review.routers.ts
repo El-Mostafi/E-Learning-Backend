@@ -173,4 +173,38 @@ router.delete(
   }
 );
 
+router.get(
+  "/api/reviews/top-reviews",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      // Assuming you have an instance of the service that contains getTopReviews
+      const topReviews = await reviewService.getTopReviews(5); // Get top 5 reviews
+      res.status(200).json(topReviews);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+router.get(
+  "/api/reviews/count",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      // 1. Call the service function to get the count
+      const totalCount = await reviewService.getAllPositiveReviewsCount();
+
+      // 2. Send the count back in a structured JSON response
+      // It's good practice to wrap primitives in an object.
+      res.status(200).json({
+        totalCount: totalCount,
+      });
+
+    } catch (error) {
+      // 3. Pass any errors to the global error handler
+      next(error);
+    }
+  }
+);
+
+
 export { router as reviewRouters };

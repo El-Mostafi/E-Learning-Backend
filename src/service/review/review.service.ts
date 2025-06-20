@@ -53,7 +53,7 @@ export class ReviewService {
         courseReview.rating = rating;
         courseReview.text = text;
         courseReview.createdAt = new Date();
-      }else{
+      } else {
         let review: createReview = {
           userName: participant.userName,
           userImg: participant.profileImg,
@@ -187,7 +187,6 @@ export class ReviewService {
     return { success: true, reviews: course.reviews };
   }
 
-
   async removeReview(userId: mongoose.Types.ObjectId, reviewId: string) {
     const user = await User.findById(userId);
     if (!user) {
@@ -218,5 +217,76 @@ export class ReviewService {
     await course.save();
 
     return { success: true, message: "Review removed successfully" };
+  }
+
+  async getTopReviews(limit: number = 5): Promise<any[]> {
+    const topReviews = await Course.aggregate([
+      // Stage 1: Filter for published courses that have at least one review.
+      // This check prevents an unnecessary $unwind on courses with no reviews.
+      { $match: { isPublished: true, "reviews.0": { $exists: true } } },
+
+      // Stage 2: Deconstruct the reviews array to process each review individually.
+      { $unwind: "$reviews" },
+
+      // Stage 3: Filter for high-rated reviews. Using $gte is more flexible.
+      // You can set this to 5 if you only want perfect scores.
+      { $match: { "reviews.rating": { $gte: 4 } } },
+
+      // Stage 4: Sort by the review's creation date to get the newest ones first.
+      { $sort: { "reviews.createdAt": -1 } },
+
+      // Stage 5: Limit to the desired number of results.
+      { $limit: limit },
+
+      // Stage 6: Project the final, clean shape for the frontend.
+      // We can now pull all data directly from the unwound document.
+      {
+        $project: {
+          // Use the review's _id for the 'key' in a React list, for example.
+          _id: "$reviews._id",
+          text: "$reviews.text", // Correct field name
+          rating: "$reviews.rating",
+          createdAt: "$reviews.createdAt",
+
+          // Create a nested 'user' object directly from the review's stored data.
+          user: {
+            name: "$reviews.userName", // Correct field name
+            image: "$reviews.userImg", // Correct field name
+          },
+
+          // Include course context.
+          course: {
+            _id: "$_id", // The original course _id
+            title: "$title",
+          },
+        },
+      },
+    ]);
+
+    return topReviews;
+  }
+
+  async getAllPositiveReviewsCount(): Promise<number> {
+    const result = await Course.aggregate([
+      // Stage 1: Deconstruct the reviews array
+      {
+        $unwind: "$reviews",
+      },
+      // Stage 2: Count the resulting documents
+      {
+        $match: { "reviews.rating": { $gte: 4 } },
+      },
+      {
+        $count: "totalReviews",
+      },
+    ]);
+
+    // The result is an array, e.g., [{ totalReviews: 8500 }]
+    // If there are no reviews, the result will be an empty array [].
+    if (result.length > 0) {
+      return result[0].totalReviews;
+    }
+
+    return 0;
   }
 }
