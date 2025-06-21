@@ -13,3 +13,19 @@ export interface InstructorStats {
     category: string;
   }[];
 }
+
+
+export interface InstructorSummary {
+  totalStudents: number;
+  coursesCreated: number;
+  averageRating: number;
+  popularCourses: {
+    id: string;
+    title: string;
+    thumbnail: string;
+    studentCount: number;
+    rating: number;
+    level: string;
+    category: string;
+  }[];
+}
