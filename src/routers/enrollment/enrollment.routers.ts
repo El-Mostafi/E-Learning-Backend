@@ -3,7 +3,10 @@ import { NextFunction, Request, Response, Router } from "express";
 import { EnrollmentService } from "../../service/enrollment/enrollment.service";
 import mongoose, { trusted } from "mongoose";
 import { roleIsStudent } from "../../../common/src/middllewares/validate-roles";
-import { EnrolledCoursesSortOption, FindAllEnrollmentsOptions } from "./dtos/enrollement.dto";
+import {
+  EnrolledCoursesSortOption,
+  FindAllEnrollmentsOptions,
+} from "./dtos/enrollement.dto";
 
 const router = Router();
 const enrollmentService = new EnrollmentService();
@@ -63,11 +66,16 @@ router.get(
       const search = req.query.search as string | undefined;
       const sort = (req.query.sort as EnrolledCoursesSortOption) || "newest";
 
-      const validSortOptions: EnrolledCoursesSortOption[] = ["newest", "title", "progress", "rating"];
+      const validSortOptions: EnrolledCoursesSortOption[] = [
+        "newest",
+        "title",
+        "progress",
+        "rating",
+      ];
       if (!validSortOptions.includes(sort)) {
-          return next(new BadRequestError("Invalid sort option."));
+        return next(new BadRequestError("Invalid sort option."));
       }
-      
+
       const options: FindAllEnrollmentsOptions = {
         page,
         limit,
@@ -79,6 +87,26 @@ router.get(
 
       const result = await enrollmentService.findAll(userId, options);
 
+      res.status(200).send(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+router.get(
+  "/api/my-courses/enrolled/ids",
+  requireAuth,
+  currentUser,
+  roleIsStudent,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.currentUser!.userId;
+
+      const result = await enrollmentService.findAllIds(userId);
+
+      if (!result.success) {
+        return next(new BadRequestError(result.message!));
+      }
 
       res.status(200).send(result);
     } catch (error) {
@@ -101,7 +129,7 @@ router.get(
       if (!result.success) {
         return next(new BadRequestError(result.message!));
       }
-      res.status(200).send(result.enrollment! );
+      res.status(200).send(result.enrollment!);
     } catch (error: any) {
       next(error);
     }
@@ -119,7 +147,12 @@ router.put(
       const sectionId = new mongoose.Types.ObjectId(req.params.sectionId);
       const lectureId = new mongoose.Types.ObjectId(req.params.lectureId);
       const userId = req.currentUser!.userId;
-      const result = await enrollmentService.updateProgress(courseId, sectionId, lectureId, userId);
+      const result = await enrollmentService.updateProgress(
+        courseId,
+        sectionId,
+        lectureId,
+        userId
+      );
       if (!result.success) {
         return next(new BadRequestError(result.message!));
       }
@@ -164,7 +197,11 @@ router.put(
         return next(new BadRequestError("Invalid score provided"));
       }
 
-      const result = await enrollmentService.markQuizPassed(courseId, userId, score);
+      const result = await enrollmentService.markQuizPassed(
+        courseId,
+        userId,
+        score
+      );
 
       if (!result.success) {
         return next(new BadRequestError(result.message!));

@@ -132,12 +132,12 @@ router.get(
 );
 router.get(
   "/api/courses/:courseId",
-  currentUser,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const courseId = req.params.courseId;
-      const userId = req.currentUser?.userId;
-      const result = await courseService.findOneById(courseId, userId);
+      const userId = req.query.userId as string;
+      const objectuserId = userId ? new mongoose.Types.ObjectId(userId) : null;
+      const result = await courseService.findOneById(courseId, objectuserId);
       if (!result.success) {
         return next(new BadRequestError(result.message!));
       }

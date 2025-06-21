@@ -30,6 +30,7 @@
     "mongoose": "^8.9.5",
     "node-cron": "^3.0.3",
     "nodemailer": "^6.10.0",
+    "pdf-lib": "^1.17.1",
     "stripe": "^17.7.0"
   },
   "devDependencies": {

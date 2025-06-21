@@ -71,7 +71,7 @@ export class CourseService {
 
   async findOneById(
     courseId: string,
-    userId: mongoose.Types.ObjectId | undefined
+    userId: mongoose.Types.ObjectId | null
   ) {
     const course = await Course.findById(courseId).populate("instructor", [
       "id",
@@ -83,6 +83,13 @@ export class CourseService {
 
     if (!course) {
       return { success: false, message: "Course not Found" };
+    }
+    // console.log("userId", userId);
+    if (!userId) {
+      return {
+        success: true,
+        course: this.transformCourse(course, null, null),
+      };
     }
 
     const enrollment: EnrollmentDocument | null = await Enrollment.findOne({

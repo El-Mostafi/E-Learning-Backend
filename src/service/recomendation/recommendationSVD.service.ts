@@ -104,7 +104,7 @@ class MLRecommendationService {
 
   public async getTrainingStatus(): Promise<TrainingStatus> {
     try {
-      const modelExists = fs.existsSync("./trainedModel.json");
+      const modelExists = fs.existsSync("/src/models/trainedModel.json");
       const currentData = await this.loadData();
 
       let status: TrainingStatus = {
@@ -508,7 +508,7 @@ class MLRecommendationService {
         const courseId = enrollment.course.toString();
         const courseFeature = courseFeatures.get(courseId);
         if (courseFeature) {
-          const weight = this.generateImplicitRating(enrollment);
+          const weight = this.generateImplicitRating(enrollment,this.userRatings.get(userId)?.get(courseId));
           totalWeight += weight;
 
           Object.keys(courseFeature).forEach((key) => {
@@ -569,6 +569,7 @@ class MLRecommendationService {
     const userProfile = this.userProfiles.get(userId)!;
     const course = (await Course.findOne({
       _id: new Types.ObjectId(courseId),
+      isPublished: true,
     }).exec()) as CourseType | null;
 
     if (!course) return 2.5;
@@ -861,7 +862,7 @@ class MLRecommendationService {
    * Save trained model to file
    */
   public async saveModel(
-    filePath: string = "./trainedModel.json"
+    filePath: string = "/src/models/trainedModel.json"
   ): Promise<void> {
     if (!this.userItemMatrix || !this.userFeatures || !this.itemFeatures) {
       throw new Error(
@@ -916,7 +917,7 @@ class MLRecommendationService {
    * Load trained model from file
    */
   public async loadModel(
-    filePath: string = "./trainedModel.json"
+    filePath: string = "/src/models/trainedModel.json"
   ): Promise<boolean> {
     try {
       if (!fs.existsSync(filePath)) {
@@ -1047,7 +1048,7 @@ class MLRecommendationService {
 
     similarities.sort((a, b) => b.similarity - a.similarity);
     const courseIds = similarities.map((similarity) =>  new Types.ObjectId(similarity.courseId)).slice(0, limit);
-    console.log("courseIds", courseIds);
+    // console.log("courseIds", courseIds);
     const courses = await Course.find({
       _id: { $in: courseIds },
       isPublished: true,

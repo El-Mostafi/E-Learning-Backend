@@ -90,6 +90,18 @@ export class EnrollmentService {
       courses: transformedCourses,
     };
   }
+  async findAllIds(userId: mongoose.Types.ObjectId) {
+    const enrollments = await Enrollment.find({ participant: userId });
+
+    if (enrollments.length === 0) {
+      return { success: false, message: "No enrollment found" };
+    }
+    const courseIds = enrollments.map((enrollment) => enrollment.course.toString());
+    return {
+      success: true,
+      courses: courseIds,
+    };
+  }
   async findAll(
     userId: mongoose.Types.ObjectId,
     options: FindAllEnrollmentsOptions
