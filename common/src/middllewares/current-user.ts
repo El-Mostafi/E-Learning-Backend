@@ -32,21 +32,21 @@ export const currentUser = (
   res: Response,
   next: NextFunction
 ) => {
-  // const authHeader = req.headers.authorization;
-  // if (!authHeader || !authHeader.startsWith("Bearer ")) {
-  //     // res.status(401).send({ message: "Unauthorized" });
-  //     return next(new NotAutherizedError());
-  // }
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    // Not signed in, just proceed without setting currentUser
+    return next();
+  }
 
   try {
-    const token = req.headers.authorization!.split(" ")[1]; // Extract token after "Bearer "
+    const token = authHeader.split(" ")[1]; // Extract token after "Bearer "
     const payload = authenticationService.verifyJwt(
       token,
       process.env.JWT_KEY!
     );
     req.currentUser = payload;
-    next();
   } catch (err) {
-    return next(new NotAutherizedError());
+    // Invalid token, proceed without setting currentUser
   }
+  next();
 };
