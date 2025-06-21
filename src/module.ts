@@ -31,6 +31,7 @@ import { adminRouters } from "./routers/admin/admin.routers";
 import { couponRouters } from "./routers/course/coupon.routers";
 import { recomendationRouter } from "./routers/recomendation/recomendation.routers";
 import { certificateRouter } from "./routers/certificate/certificate.router";
+import { contactRouters } from "./routers/contact/contact.routers";
 
 export class AppModule {
   constructor(public app: Application) {
@@ -87,6 +88,7 @@ export class AppModule {
     this.app.use(adminRouters);
     this.app.use(recomendationRouter);
     this.app.use(certificateRouter);
+    this.app.use(contactRouters);
 
     this.app.all("*", (req, res, next) => {
       next(new NotFoundError());
