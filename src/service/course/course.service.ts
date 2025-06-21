@@ -92,7 +92,11 @@ export class CourseService {
     const user = await User.findById(userId).select("cart").lean();
 
     if (!user) {
-      return { success: false, message: "User not found" };
+      return {
+        success: true,
+        course: this.transformCourse(course, enrollment, null),
+        message: "User not found",
+      };
     }
 
     const cartItem = user.cart.find(
@@ -741,7 +745,7 @@ export class CourseService {
       )
       .limit(limit)
       .skip((page - 1) * limit)
-      .sort({ createdAt: -1 , _id: -1})
+      .sort({ createdAt: -1, _id: -1 })
       .lean() // .lean() for performance and easier object manipulation
       .exec();
 
