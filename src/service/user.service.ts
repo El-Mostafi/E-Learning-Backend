@@ -81,7 +81,32 @@ export class UserService {
     if (!user) {
       return { success: false, message: "User not found" };
     }
-    return { success: true, message: "User updated successfully", user: user };
+    const updatedUser: AugmentedUser = {
+      id: user.id,
+      userName: user.userName,
+      profileImg: user.profileImg,
+      email: user.email,
+      role: user.role,
+      status: user.status,
+      emailConfirmed: user.emailConfirmed,
+      createdAt: user.createdAt,
+      lastLogin: user.lastLogin,
+    };
+    if (user.role === "student") {
+      updatedUser.coursesEnrolled = await Enrollment.countDocuments({
+        participant: user._id,
+      });
+    }
+    if (user.role === "instructor") {
+      updatedUser.coursesCreated = await Course.countDocuments({
+        instructor: user._id,
+      });
+    }
+    return {
+      success: true,
+      message: "User updated successfully",
+      user: updatedUser,
+    };
   }
   async getAllUsers(options: GetAllUsersOptions) {
     const { page, limit, role, status, search } = options;
@@ -103,7 +128,7 @@ export class UserService {
       )
       .limit(limit)
       .skip((page - 1) * limit)
-      .sort({ createdAt: -1 })
+      .sort({ createdAt: -1, _id: -1 })
       .lean()
       .exec();
 
@@ -170,6 +195,7 @@ export class UserService {
       id: user.id,
       userName: user.userName,
       email: user.email,
+      profileImg: user.profileImg,
       role: user.role,
       status: user.status,
       educationLevel: user.educationLevel || "",
@@ -213,16 +239,25 @@ export class UserService {
       pendingCount,
       inactiveCount,
     ] = await Promise.all([
-      User.countDocuments({ role: { $in: ["student", "instructor"] } }), 
+      User.countDocuments({ role: { $in: ["student", "instructor"] } }),
       Course.countDocuments(),
-      User.countDocuments({ status: "active",role: { $in: ["student", "instructor"] } }),
-      User.countDocuments({ role: "student", status: "active", emailConfirmed: true }),
-      User.countDocuments({ role: "instructor", status: "active", emailConfirmed: true }),
+      User.countDocuments({
+        status: "active",
+        role: { $in: ["student", "instructor"] },
+      }),
+      User.countDocuments({
+        role: "student",
+        status: "active",
+        emailConfirmed: true,
+      }),
+      User.countDocuments({
+        role: "instructor",
+        status: "active",
+        emailConfirmed: true,
+      }),
       User.countDocuments({ emailConfirmed: false }),
-      User.countDocuments({ status: "blocked" }), 
+      User.countDocuments({ status: "blocked" }),
     ]);
-
-    
 
     const userDistribution = [
       {

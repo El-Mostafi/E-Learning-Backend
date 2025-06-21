@@ -3,7 +3,7 @@ import { BadRequestError } from "../errors/bad-request-error";
 import { NotAutherizedError } from "../errors/not-autherized-error";
 import Course from "../../../src/models/course";
 
-export const requireOwnership = async (
+export const requireOwnershipOrAdmin = async (
   req: Request,
   res: Response,
   next: NextFunction
@@ -19,8 +19,7 @@ export const requireOwnership = async (
     if (!course) {
       return next(new BadRequestError("Course not found"));
     }
-    console.log(req.currentUser?.userId.toString() ,"here",course.instructor.toString());
-    if (course.instructor.toString() !== req.currentUser?.userId.toString()) {
+    if (course.instructor.toString() !== req.currentUser?.userId.toString() && req.currentUser?.role !== "admin") {
       return next(new NotAutherizedError());
     }
     next();

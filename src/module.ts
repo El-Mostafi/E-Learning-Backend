@@ -29,6 +29,7 @@ import { trendingRouters } from "./routers/trending/trending.routers";
 import { userRouters } from "./routers/user/users.routers";
 import { adminRouters } from "./routers/admin/admin.routers";
 import { couponRouters } from "./routers/course/coupon.routers";
+import { recomendationRouter } from "./routers/recomendation/recomendation.routers";
 import { certificateRouter } from "./routers/certificate/certificate.router";
 
 export class AppModule {
@@ -84,6 +85,7 @@ export class AppModule {
     this.app.use(trendingRouters);
     this.app.use(userRouters);
     this.app.use(adminRouters);
+    this.app.use(recomendationRouter);
     this.app.use(certificateRouter);
 
     this.app.all("*", (req, res, next) => {

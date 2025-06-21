@@ -280,14 +280,7 @@ router.put(
       .optional()
       .trim()
       .custom(value => {
-        const parts = value.split('|');
-        if (parts.length !== 2) throw new Error('Invalid username format');
-        const [firstName, lastName] = parts;
-        if (firstName.length < 3 || firstName.length > 20) return false;
-        if (lastName.length < 3 || lastName.length > 20) return false;
-        if (/[|]/.test(firstName) || /[|]/.test(lastName)) {
-          throw new Error('Names cannot contain the "|" character');
-        }
+        if (value.length < 3 || value.length > 20) return false;
         return true;
       })
       .withMessage('Username must be in "FirstName|LastName" format (3-20 chars each)'),

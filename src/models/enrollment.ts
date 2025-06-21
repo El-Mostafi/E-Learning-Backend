@@ -57,6 +57,8 @@ const enrollmentSchema = new mongoose.Schema<EnrollmentDocument>({
   progress: {
     type: Number,
     default: 0,
+    min: 0,
+    max: 100,
   },
   completed: {
     type: Boolean,

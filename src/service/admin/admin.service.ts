@@ -209,11 +209,10 @@ export class AdminService {
   }
 
   private async getActiveUsersCount(): Promise<number> {
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
 
     return User.countDocuments({
-      lastLogin: { $gte: thirtyDaysAgo },
+      status: "active",
     });
   }
 
