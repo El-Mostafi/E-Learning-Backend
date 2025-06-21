@@ -8,7 +8,8 @@ import {
 } from "../../../common";
 import { roleIsInstructor } from "../../../common/src/middllewares/validate-roles";
 import mongoose from "mongoose";
-import { InstructorStats } from "./dtos/instructor.dtos";
+import { InstructorStats, InstructorSummary } from "./dtos/instructor.dtos";
+import { body } from "express-validator";
 
 const router = Router();
 const instructorService = new InstructorService();
@@ -33,6 +34,29 @@ router.get(
     res.status(200).json(stats);
   }
 );
+
+
+router.get(
+  "/api/instructors/stats",
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { instructorId } = req.query as { instructorId?: string };
+
+    if (!instructorId) {
+      return next(new BadRequestError("Instructor ID is required"));
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(instructorId)) {
+      return next(new BadRequestError("Invalid instructor ID"));
+    }
+
+    const stats : InstructorSummary = await instructorService.getDashboardStats(
+      new mongoose.Types.ObjectId(instructorId)
+    );
+
+    res.status(200).json(stats);
+  }
+);
+
 router.get(
   "/api/instructors",
   async (req: Request, res: Response, next: NextFunction) => {
