@@ -104,7 +104,8 @@ class MLRecommendationService {
 
   public async getTrainingStatus(): Promise<TrainingStatus> {
     try {
-      const modelExists = fs.existsSync("/src/models/trainedModel.json");
+      const modelPath = path.resolve(__dirname, "../../../../trainedModel.json");
+      const modelExists = fs.existsSync(modelPath);
       const currentData = await this.loadData();
 
       let status: TrainingStatus = {
@@ -862,7 +863,7 @@ class MLRecommendationService {
    * Save trained model to file
    */
   public async saveModel(
-    filePath: string = "/src/models/trainedModel.json"
+    filePath: string = path.resolve(__dirname, "../../../../trainedModel.json")
   ): Promise<void> {
     if (!this.userItemMatrix || !this.userFeatures || !this.itemFeatures) {
       throw new Error(
@@ -875,7 +876,6 @@ class MLRecommendationService {
       );
     }
     try {
-      // console.log("usersRecommendations in saveModel", this.usersRecommendations);
       const modelData: EnhancedModelData = {
         userItemMatrix: this.userItemMatrix.to2DArray(),
         userFeatures: this.userFeatures.to2DArray(),
@@ -917,7 +917,7 @@ class MLRecommendationService {
    * Load trained model from file
    */
   public async loadModel(
-    filePath: string = "/src/models/trainedModel.json"
+    filePath: string = path.resolve(__dirname, "../../../../trainedModel.json")
   ): Promise<boolean> {
     try {
       if (!fs.existsSync(filePath)) {
