@@ -45,7 +45,7 @@ export const deleteVideosImageInCourse = async (
     );
 
     // Optionally log delete results
-    console.log("Video delete results:", deleteResults);
+    // console.log("Video delete results:", deleteResults);
 
     // Delete image if exists
     const imgPublicId = course.imgPublicId;

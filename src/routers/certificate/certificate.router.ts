@@ -58,7 +58,7 @@ router.get(
       res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
       res.setHeader("Content-Length", certificateBuffer.length);
 
-      console.log("Certificate generated successfully for course:", courseId, "and student:", studentId);
+      // console.log("Certificate generated successfully for course:", courseId, "and student:", studentId);
       
       // Send the PDF buffer as response
       res.send(Buffer.from(certificateBuffer));

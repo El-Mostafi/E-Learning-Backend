@@ -38,7 +38,7 @@ router.get(
         );
       }
 
-      console.log("Hello from Here!")
+      // console.log("Hello from Here!")
 
       const result = await courseService.findPublishedCourses(
         page,
@@ -51,7 +51,7 @@ router.get(
       }
       res.status(200).send(result);
     } catch (error) {
-      console.log(error)
+      // console.log(error)
       next(error);
     }
   }

@@ -91,7 +91,7 @@ router.post(
   roleIsStudent,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      console.log("add review route");
+      // console.log("add review route");
       const userId = req.currentUser!.userId;
       const courseId = new mongoose.Types.ObjectId(req.params.courseId);
       const { rating, text } = req.body;

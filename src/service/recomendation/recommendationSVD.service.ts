@@ -362,7 +362,7 @@ class MLRecommendationService {
         0,
         reducedK - 1
       );
-      console.log("userFeatures", userFeatures);
+      // console.log("userFeatures", userFeatures);
       this.userFeatures = userFeatures.mmul(sqrtS);
 
       // Item features: V * S^(1/2)
@@ -372,13 +372,13 @@ class MLRecommendationService {
         0,
         reducedK - 1
       );
-      console.log("itemFeatures", itemFeatures);
+      // console.log("itemFeatures", itemFeatures);
       this.itemFeatures = itemFeatures.mmul(sqrtS);
 
-      console.log("Matrix factorization completed successfully");
+      // console.log("Matrix factorization completed successfully");
       return true;
     } catch (error) {
-      console.error("Matrix factorization failed:", error);
+      // console.error("Matrix factorization failed:", error);
       return false;
     }
   }
@@ -621,29 +621,29 @@ class MLRecommendationService {
 
   async trainModel(): Promise<boolean> {
     try {
-      console.log("Loading data...");
+      // console.log("Loading data...");
       const { enrollments, users, courses } = await this.loadData();
 
       if (enrollments.length === 0) {
-        console.log("No training data available");
+        // console.log("No training data available");
         return false;
       }
 
-      console.log("Creating user-item matrix...");
+      // console.log("Creating user-item matrix...");
       this.createUserItemMatrix(enrollments, users, courses);
       // console.log("users", this.userToIdx);
       // console.log("courses", this.courseToIdx.keys());
-      console.log("Performing matrix factorization...");
+      // console.log("Performing matrix factorization...");
       const success = this.performMatrixFactorization(50);
       if (!success) return false;
 
-      console.log("Computing similarities...");
+      // console.log("Computing similarities...");
       this.computeSimilarities();
 
-      console.log("Extracting course features...");
+      // console.log("Extracting course features...");
       const courseFeatures = await this.extractCourseFeatures(courses);
 
-      console.log("Building user profiles...");
+      // console.log("Building user profiles...");
       await this.buildUserProfiles(enrollments, courseFeatures);
 
       // Create metadata for the trained model
@@ -680,11 +680,11 @@ class MLRecommendationService {
 
       await Promise.all(recommendationPromises);
 
-      console.log("Saving model...");
+      // console.log("Saving model...");
       await this.saveModel();
       this.clearData();
 
-      console.log("ML Recommendation model trained successfully!");
+      // console.log("ML Recommendation model trained successfully!");
       return true;
     } catch (error) {
       console.error("Training failed:", error);
@@ -769,11 +769,11 @@ class MLRecommendationService {
 
       // Try to get precomputed recommendations first (FAST PATH)
       const precomputed = this.usersRecommendations.get(userId);
-      console.log("precomputed recommendations", precomputed);
+      // console.log("precomputed recommendations", precomputed);
       // console.log("usersRecommendations", this.usersRecommendations);
 
       if (precomputed && precomputed.length > 0) {
-        console.log(`Using precomputed recommendations for user ${userId}`);
+        // console.log(`Using precomputed recommendations for user ${userId}`);
 
         // Get course details for the recommended course IDs
         const courseIds = precomputed
@@ -806,9 +806,9 @@ class MLRecommendationService {
       }
 
       // Fallback to real-time computation (SLOW PATH)
-      console.log(
-        `No precomputed recommendations found for user ${userId}, computing real-time...`
-      );
+      // console.log(
+      //   `No precomputed recommendations found for user ${userId}, computing real-time...`
+      // );
       const preCourses = await Course.find({
         isPublished: true,
       }).exec();
@@ -906,7 +906,7 @@ class MLRecommendationService {
       }
 
       fs.writeFileSync(filePath, JSON.stringify(modelData, null, 2));
-      console.log(`Model saved successfully to ${filePath}`);
+      // console.log(`Model saved successfully to ${filePath}`);
     } catch (error) {
       console.error("Error saving model:", error);
       throw new Error(`Failed to save model: ${error}`);
@@ -994,7 +994,7 @@ class MLRecommendationService {
     this.courseClusters.clear();
     this.modelMetadata = null;
 
-    console.log("Model data cleared from memory");
+    // console.log("Model data cleared from memory");
   }
 
   // Get similar users for a given user

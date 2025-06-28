@@ -179,7 +179,7 @@ router.get(
         await couponService.getAllInstructorCoursesWithCoupons(
           new mongoose.Types.ObjectId(instructorId)
         );
-      console.log(coursesWithCoupons);
+      // console.log(coursesWithCoupons);
       res.status(200).json({
         totalCourses: coursesWithCoupons.length,
         courses: coursesWithCoupons,

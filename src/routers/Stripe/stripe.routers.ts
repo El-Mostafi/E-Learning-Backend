@@ -38,7 +38,7 @@ router.post(
   "/webhook",
   bodyParser.raw({ type: 'application/json' }), // required for Stripe signature verification
   async (req: Request, res: Response) => {
-    console.log("WEBHook")
+    // console.log("WEBHook")
     const sig = req.headers["stripe-signature"] as string;
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 

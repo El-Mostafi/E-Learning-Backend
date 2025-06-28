@@ -11,7 +11,7 @@ router.get(
       const limit = parseInt(req.query.limit as string) || 8;
       const page = parseInt(req.query.page as string) || 1;
       const category = (req.query.category as string) || undefined;
-      console.log(category);
+      // console.log(category);
       const response = await trendingService.getHybridTrending(
         limit,
         page,
@@ -20,7 +20,7 @@ router.get(
 
       res.status(200).json(response);
     } catch (error) {
-      console.log(error);
+      // console.log(error);
       next(error);
     }
   }

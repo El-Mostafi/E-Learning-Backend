@@ -64,9 +64,9 @@ const htmlContent = `
 `;
 
   // 5. Call your core email service with the prepared data
-  console.log(`Preparing to send email to ${recipientEmail}...`);
+  // console.log(`Preparing to send email to ${recipientEmail}...`);
   await emailSenderService.sendEmail(recipientEmail, emailSubject, htmlContent);
-  console.log('Email handover to emailSenderService was successful.');
+  // console.log('Email handover to emailSenderService was successful.');
 };
 
 // 6. Export the function so the router can use it

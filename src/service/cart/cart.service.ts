@@ -16,7 +16,7 @@ export class CartService {
 
     try {
       const user = await User.findById(userId).session(session);
-      console.log(userId, courseId);
+      // console.log(userId, courseId);
       if (!user) throw new BadRequestError("User not found");
       if (user.role !== "student")
         throw new BadRequestError("Only students can add to cart");

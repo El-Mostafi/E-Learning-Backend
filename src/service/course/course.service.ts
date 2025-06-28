@@ -165,15 +165,15 @@ export class CourseService {
     try {
       let sort: any = { createdAt: -1 };
       if (sortOption === "rating") {
-        console.log("Sorting by rating");
+        // console.log("Sorting by rating");
         sort = { averageRating: -1 };
       }
       if (sortOption === "enrollmentCount") {
-        console.log("Sorting by enrollment count");
+        // console.log("Sorting by enrollment count");
         sort = { enrollmentCount: -1 };
       }
       if (sortOption === "popularity") {
-        console.log("Sorting by popularity");
+        // console.log("Sorting by popularity");
         const popularityService = new PopularityService();
         const popularityResult = await popularityService.getPopularCourses(
           0,
@@ -369,7 +369,7 @@ export class CourseService {
         totalCount: result.totalCount || 0,
       };
     } catch (error) {
-      console.log(error);
+      // console.log(error);
       return { success: false, message: "No published courses found" };
     }
 
@@ -483,7 +483,7 @@ export class CourseService {
     userRole: string
   ) {
     try {
-      console.log("courseDto", courseDto);
+      // console.log("courseDto", courseDto);
       const course = await Course.findById(courseId);
       if (!course) {
         return { success: false, message: "Course not found" };
@@ -1019,8 +1019,8 @@ export class CourseService {
         createdAt: course.createdAt || "",
       };
     } catch (error) {
-      console.log(error);
-      console.log("CourseTRy", course);
+      // console.log(error);
+      // console.log("CourseTRy", course);
       return {} as courseDataGenerale;
     }
   }

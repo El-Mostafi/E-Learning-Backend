@@ -22,7 +22,7 @@ router.post(
       );
       res.status(201).json(cart);
     } catch (error) {
-      console.log(error);
+      // console.log(error);
       next(error);
     }
   }

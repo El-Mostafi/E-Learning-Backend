@@ -315,9 +315,9 @@ export class EnrollmentService {
     );
 
     enrollment.progress = progress;
-    console.log("numberOflectures", numberOflectures);
-    console.log("numberOfCompletedLectures", numberOfCompletedLectures);
-    console.log("progress", progress);
+    // console.log("numberOflectures", numberOflectures);
+    // console.log("numberOfCompletedLectures", numberOfCompletedLectures);
+    // console.log("progress", progress);
 
     if (progress === 100) {
       enrollment.completed = true;

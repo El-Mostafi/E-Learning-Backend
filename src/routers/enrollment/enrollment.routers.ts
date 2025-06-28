@@ -125,7 +125,7 @@ router.get(
       const userId = req.currentUser!.userId;
       const courseId = req.params.courseId;
       const result = await enrollmentService.findOneById(userId, courseId);
-      console.log(result);
+      // console.log(result);
       if (!result.success) {
         return next(new BadRequestError(result.message!));
       }

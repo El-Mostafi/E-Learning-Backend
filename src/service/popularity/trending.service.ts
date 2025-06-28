@@ -159,17 +159,17 @@ export class TrendingService {
       },
     ]);
 
-    console.log(
-      "Aggregation completed, result length:",
-      aggregationResult.length
-    );
+    // console.log(
+    //   "Aggregation completed, result length:",
+    //   aggregationResult.length
+    // );
 
     const result = aggregationResult[0] || { data: [], totalCount: 0 };
 
-    console.log("Final result:", {
-      dataLength: result.data?.length || 0,
-      totalCount: result.totalCount || 0,
-    });
+    // console.log("Final result:", {
+    //   dataLength: result.data?.length || 0,
+    //   totalCount: result.totalCount || 0,
+    // });
 
     // Transform the courses to match your courseDataGenerale interface
     const transformedCourses = await Promise.all(

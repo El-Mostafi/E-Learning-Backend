@@ -62,7 +62,7 @@ export class PopularityService {
 
     const skip = (page - 1) * limit;
 
-    console.log("Input parameters:", { minRating, page, limit, category });
+    // console.log("Input parameters:", { minRating, page, limit, category });
 
     try {
       // Build match conditions
@@ -73,7 +73,7 @@ export class PopularityService {
         initialMatch["category.name"] = category;
       }
 
-      console.log("Initial match conditions:", initialMatch);
+      // console.log("Initial match conditions:", initialMatch);
 
       const aggregationResult = await Course.aggregate([
         // Step 1: Match published courses and category if specified
@@ -218,18 +218,18 @@ export class PopularityService {
         },
       ]);
 
-      console.log(
-        "Aggregation completed, result length:",
-        aggregationResult.length
-      );
+      // console.log(
+      //   "Aggregation completed, result length:",
+      //   aggregationResult.length
+      // );
 
       const result = aggregationResult[0] || { data: [], totalCount: 0 };
 
-      console.log("Final result:", {
-        dataLength: result.data?.length || 0,
-        totalCount: result.totalCount || 0,
-      });
-      console.log("Final result:", result.data);
+      // console.log("Final result:", {
+      //   dataLength: result.data?.length || 0,
+      //   totalCount: result.totalCount || 0,
+      // });
+      // console.log("Final result:", result.data);
       // Transform the courses to match your courseDataGenerale interface
       const transformedCourses = await Promise.all(
         (result.data || []).map(async (course: CourseDocument) => {

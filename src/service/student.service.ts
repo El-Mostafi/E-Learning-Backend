@@ -42,7 +42,7 @@ export class StudentService {
         },
       })
       .sort({ startedAt: -1, completedAt: -1 });
-    console.log("enrollments :", enrollments);
+    // console.log("enrollments :", enrollments);
 
     // Calculate total hours learned
     let totalTimeLearned = 0;
