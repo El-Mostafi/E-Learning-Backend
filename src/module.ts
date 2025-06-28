@@ -95,6 +95,6 @@ export class AppModule {
     });
     this.app.use(errorHandler);
 
-    this.app.listen(8031, () => console.log("Server is running on port 8031"));
+    this.app.listen(process.env.PORT || 8031, () => console.log("Server is running on port 8031"));
   }
 }
