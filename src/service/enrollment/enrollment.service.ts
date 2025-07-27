@@ -94,7 +94,7 @@ export class EnrollmentService {
     const enrollments = await Enrollment.find({ participant: userId });
 
     if (enrollments.length === 0) {
-      return { success: false, message: "No enrollment found" };
+      return { success: true, courses: [] };
     }
     const courseIds = enrollments.map((enrollment) => enrollment.course.toString());
     return {
