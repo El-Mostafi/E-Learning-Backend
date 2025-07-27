@@ -15,9 +15,9 @@ export class CertificateService {
   private templatePath: string;
 
   constructor() {
-    this.templatePath = path.join(
-      __dirname,
-      "../../../../templates/certificate-template.pdf"
+    this.templatePath = path.resolve(
+      process.cwd(),
+      "templates/certificate-template.pdf"
     );
   }
 
