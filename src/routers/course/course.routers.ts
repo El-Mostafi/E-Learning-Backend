@@ -30,11 +30,20 @@ router.get(
       const page = parseInt(req.query.currentPage as string) || 1;
       const limit = parseInt(req.query.limit as string) || 9;
       const sortOption = req.query.sortOption as string;
-      const filterParams = req.query.filterParams as any;
+
+      let filterParams: any = {};
+      if (req.query.filterParams && typeof req.query.filterParams === 'string') {
+        try {
+          filterParams = JSON.parse(req.query.filterParams as string);
+        } catch (parseError) {
+          console.error('Error parsing filterParams:', parseError);
+          filterParams = {};
+        }
+      }
 
       if (filterParams?.ratings) {
-        filterParams.ratings = filterParams.ratings.map((rating: string) =>
-          parseInt(rating)
+        filterParams.ratings = filterParams.ratings.map((rating: string | number) =>
+          typeof rating === 'string' ? parseInt(rating) : rating
         );
       }
 
